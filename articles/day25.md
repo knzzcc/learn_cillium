@@ -379,19 +379,3 @@ kubectl exec netshoot --context $CLUSTER1_CONTEXT -- curl -s http://10.245.2.249
 在下一篇文章中，我會帶大家進一步實驗 Cluster Mesh 的進階功能：像是 **Global Service**、**跨 Cluster 的 Service Discovery**，以及 **Policy 同步與流量觀察 (Hubble)**
 
 透過實際觀察封包路徑與 eBPF 層的流量行為，我們將更深入了解 Cilium 如何真正實現「多 Cluster 一體化」的網路架構
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

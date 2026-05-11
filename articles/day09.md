@@ -373,18 +373,3 @@ Cilium 在幫新 Pod 分配 Identity 的流程，其實是一個橫跨 **CNI plu
 
 這個同步設計保證了：**當 kubelet 說 Pod 網路 ready 的時候，對應的 NetworkPolicy 已經在 datapath 層生效**。換句話說，Pod 一出生就馬上受到 Policy 保護，不會有「啟動初期還沒套上規則」的空窗期。
 
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

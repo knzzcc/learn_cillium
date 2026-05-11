@@ -390,19 +390,3 @@ return arp_respond(ctx, &mac, tip, &smac, sip, 0);
 所以 Pod 看到的 gateway 10.244.2.161，其實從頭到尾只是 **BPF 在騙它**，把「路由的 IP 概念」綁到「veth 的 MAC」
 
 這樣會可以提高效能，因為 BPF 在 TC Ingress 就能直接回 ARP 封包，省掉從 netdev → kernel network stack → 再回來的多次 context switch
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

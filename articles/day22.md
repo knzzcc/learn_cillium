@@ -427,19 +427,3 @@ for i in {1..20}; do kubectl exec netshoot -- curl -s http://bookstore:8080; don
 將流量分流 (Traffic Splitting) 與重試策略下沉到 Infra 層實作，不改任何應用程式，就能動態控制流量比例。
 
 接下來的篇章會延伸這個基礎，深入探索 **Gateway API** 的實踐
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

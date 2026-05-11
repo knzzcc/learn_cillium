@@ -319,19 +319,3 @@ service) 映射到的 Backend Pod 就是 `10.244.2.69`
 的 ClusterIP，完全沒有被導向到節點上的 node-local-dns Pod。
 
 最後，我們透過配置 **Cilium Local Redirect Policy (LRP)** 成功讓封包在 eBPF 層被攔截，並重新導向至同一節點的 node-local-dns Pod，使得 DNS 查詢真正命中本地 cache，大幅降低跨節點的 DNS 延遲與負載。
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

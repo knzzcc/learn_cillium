@@ -437,19 +437,3 @@ default via 10.13.1.1 dev ens5 proto dhcp src 10.13.1.57 metric 100
 而且因為 Cilium 倚賴 eBPF 帶來的「**可程式化 datapath**」，要真的弄懂這些魔法，光看文件不夠，還得 dive into 原始碼才能體會背後的設計。
 
 今天把這三個 netdev 條理清楚之後，接下來我們就可以開始探索 **跨 Node 的 Datapath**。
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

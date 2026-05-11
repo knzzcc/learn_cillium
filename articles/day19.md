@@ -168,19 +168,3 @@ Cilium 完全不用 iptables 或 IPVS，而是靠 eBPF + BPF Maps。
 **一句話總結今天文章**：
 
 Cilium 透過 eBPF 在 Kernel datapath 中實作 **Socket LB**，利用 BPF Maps 進行 O(1) 的 Service/Backend 查詢，並內建 Connection Tracking 機制，從而徹底取代 kube-proxy。
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

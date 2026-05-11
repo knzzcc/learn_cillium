@@ -233,19 +233,3 @@ etcd 就像一個房東，會檢查：
 
 
 最後我自己的理解是：要在生產環境好好跑 Cilium，除了知道 eBPF 本身的威力，**更要懂背後的狀態管理哲學**。你要選對適合自己 cluster 規模的控制平面架構，監控和除錯要能接受 eventual consistency 的特性，並且 Troubleshooting 時知道這些特性會帶來哪些 Error。
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

@@ -82,19 +82,3 @@ system call，背後是把 FD (file descriptor) 指向的程式跟一個 hook po
 從 cBPF 到 eBPF 的演進，可以看到 BPF 最初是為了解決 tcpdump 效能問題而生，但隨著 Linux 社群的推動，eBPF 已經演變成一個通用的 **Kernel Extensibility Framework**。它透過 **Verifier** 確保安全、**JIT Compiler** 提升效能、以及 **hook point 機制** 讓我們能在 Kernel 的各種事件上動態插入程式碼。
 
 掌握了「**編譯成 Bytecode → Load 到 Kernel → 通過 Verifier → JIT → attach 到 hook point**」這條流程，就能對 eBPF 的運作有清楚的全貌，也為後續理解 Cilium 打下基礎。
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程

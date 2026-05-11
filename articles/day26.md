@@ -587,19 +587,3 @@ kubectl exec -it netshoot --context hk-cluster -- bash -c 'for i in {1..20}; do 
 這兩個簡單但強大的 annotation，我們就能控制跨 Region 的流量偏好，在確保高可用性的同時，也能兼顧延遲與成本。
 
 從 Day 1 一路走到 Day 26，我們從傳統方案的痛點說起，接著學習了 eBPF ，再從最基本的 Pod, Service, Service Mesh 一路走到今天的 Cluster Mesh，透過這樣循序漸進的教學其實已經把 Cilium 該學的都學到了！後續的文章我將開始分享 Cilium 實戰的經驗，讓讀者們除了在鐵人賽中學會 Cilium 的底層原理之外，還能避免在真實戰場中走了很多彎路！
-
-系列文
-
-30 天深入淺出 Cilium ：從入門到實戰
-共 30 篇
-
--
-26[Day 26] Cilium Cluster Mesh 實現跨 Cluster 高可用與安全性： Load Balancing 與 NetworkPolicy 實踐
--
-27[Day 27] Cilium 實戰分享 (1) 裝了 NodeLocalDNS Cache， DNS 封包原來都沒進去 NodeLocalDNS Cache？
--
-28[Day 28] Cilium 實戰分享 (2) 想監控 DNS，封包確實送進去 NodeLocalDNS Cache 了， 但是 hubble_dns_queries_total 怎沒計算到？
--
-29[Day 29] Cilium 實戰分享 (3) 裝了 Cilium 後，流量來了，一個 Pod 要 Ready 需要等 26 分鐘？
--
-30[Day 30] 深入淺出 Cilium 完結篇：從 Cilium 出發的下一段旅程
