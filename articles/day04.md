@@ -33,13 +33,14 @@ tcpdump 是在 1988 年而誕生，當時會需要把封包從 kernel Copy 到 u
 
 推薦影片：eBPF 紀錄片
 
+## eBPF 如何運作
 
 在前面講 BPF 的誕生，其實就有提到會把某東西編譯成 BPF Bytecode，所以其實關鍵在於有沒有對應的 Compliler 能幫你把 Code 編譯成 BPF Bytecode，目前的主流就是 「寫 C 語言然後用 LLVM/Clang 編譯成 BPF Bytecode」，至於 Cilium 你說是用 Golang 寫的？其實是 Golang 寫一些 Control Plane 的元件，但是要載入到 Kernel 的 eBPF Program 仍是用 C 寫，然後再編譯成 BPF bytecode，可以到 Cilium 的 GitHub 找到 /bpf 目錄，這裡就是 C 寫出來的然後會被編譯成 BPF Bytecode。
 
 另外簡單提一下 Bytecode 的內容：BPF 定義了一套屬於自己的 RISC 型指令集，Bytecode 其實就是依照這套指令集編譯出來的指令，詳細內容推薦可以閱讀這份文件。
 
 我們前面聊的那些，大概就會有一個感覺如下面這張圖，C -> Clang 編譯 -> BPF Bytecode：
-
+![[Pasted image 20260511164334.png]]
 其實到這裡已經掌握 BPF Program 的開發流程了，我們接下來要解決的是「怎麼丟到 Kernel 執行？」
 
 要丟到 Kernel 執行，就必須先提到一個名詞叫做 “Load”，中文我通常會說「載入」，**所謂的 Load 就是把 BPF Bytecode 載入到 Kernel**，要做到這件事情，會使用 bpftool 這個工具，其實這背後都是呼叫 `bpf()`
@@ -58,6 +59,8 @@ system call， `bpf()`
 
 選項是否有開啟，通常大多數預設都是有開啟的，如果有開啟，Verifier 的下一站遇到的就是 **JIT Compiler**，JIT Compiler 會幫你把 BPF Bytecode 編譯成 native machine code (例如你 CPU 是 arm64 架構，那就編譯成 AArch64 指令)，因為被編譯成 Machine Code ，CPU 可以直接執行，所以效能會有所提升，如果沒有 JIT，kernel 只能用 **interpreter** 模式，一條一條解釋 bytecode，效能會比較慢。
 
+![[Pasted image 20260511164359.png]]
+
 到這邊已經成功 Load eBPF Program 到 Kernel 了，但是載入後要怎麼執行？這時候就要講講 “**attach“ 和 “hook point”**
 
 為了方便理解，你可以把 **hook point** 想像成 Linux kernel 裡預先留好的「洞」：
@@ -73,11 +76,14 @@ system call，背後是把 FD (file descriptor) 指向的程式跟一個 hook po
 所以你想像一下，現在有一個封包進來你的機器，會碰到實體網卡 → Kernel → 經過 hook point 就會**執行綁定的 BPF Program。**
 
 現在我們把上面的知識用一張圖來表示，就是下面這張圖！下面的例子是把 eBPF Program attach 到 TC ingress / egress 的 hook point
-
+![[Pasted image 20260511164431.png]]
+## 推薦學習資源
 - Buzzing Across Space: The Illustrated Children’s Guide to eBPF (初學大推)
 - ebpf.io
 - docs.ebpf.io
 - BPF and XDP Reference Guide (難度較高，適合想要深入了解的人)
+
+## 小結
 
 從 cBPF 到 eBPF 的演進，可以看到 BPF 最初是為了解決 tcpdump 效能問題而生，但隨著 Linux 社群的推動，eBPF 已經演變成一個通用的 **Kernel Extensibility Framework**。它透過 **Verifier** 確保安全、**JIT Compiler** 提升效能、以及 **hook point 機制** 讓我們能在 Kernel 的各種事件上動態插入程式碼。
 

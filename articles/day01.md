@@ -31,7 +31,7 @@ Shiun 目前於 SHOPLINE 擔任 Cloud Engineer，工作內容主要專注在 EKS
 
 以下就是一個 K8s Service，其背後的 iptables rules 範例：
 
-```
+```shell
 $ iptables-save | grep "KUBE-SVC-N3PJZKC3AAWBF4KR" | grep "shiun"
 -A KUBE-SERVICES -d 172.20.235.205/32 -p tcp -m comment --comment "shiun/shiun-nginx:http cluster IP" -m tcp --dport 80 -j KUBE-SVC-N3PJZKC3AAWBF4KR
 -A KUBE-SVC-N3PJZKC3AAWBF4KR -m comment --comment "shiun/shiun-nginx:http -> 10.13.112.110:8080" -m statistic --mode random --probability 0.33333333349 -j KUBE-SEP-QYTNDCGG4QDC4YF4
@@ -45,13 +45,13 @@ $ iptables-save | grep "KUBE-SVC-N3PJZKC3AAWBF4KR" | grep "shiun"
 ，都仰賴 **iptables** 來實現 Network Policy 及 Service Load Balancing，這就帶來幾個問題：
 
 -
-**效能瓶頸**：iptables 是「一條一條規則順序比對」，時間複雜度是**O(n)，**規則數量一多，效能就會明顯下降 -
-**可觀測性不足**：你很難清楚看到「是哪個 Pod 封包被丟掉」或「哪條規則生效」 -
+**效能瓶頸**：iptables 是「一條一條規則順序比對」，時間複雜度是**O(n)**，規則數量一多，效能就會明顯下降
+**可觀測性不足**：你很難清楚看到「是哪個 Pod 封包被丟掉」或「哪條規則生效」
 **管理複雜**：IP 綁定 Policy，Pod 一旦 Churn (動態變動很快)，會導致大量規則需要更新
 
 這時候，eBPF (extended Berkeley Packet Filter) 出場了，eBPF 的細節在之後幾天會更深入探討，這裡先簡單來說明 eBPF 是什麼。eBPF 就是「**在不用重新編譯 Linux Kernel 或是修改 Linux Kernel 程式碼的情況下，安全地掛載一段自訂程式碼到 Kernel 中的特定點 (hook points)**」
 
-
+![[Pasted image 20260511163619.png]]
 圖片取自：https://ebpf.io/what-is-ebpf/#hook-overview
 
 eBPF 的感覺大概是這樣：

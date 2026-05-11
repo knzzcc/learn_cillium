@@ -17,34 +17,37 @@ Day 2 我們已經建立一個 K8s Cluster，也透過 Helm 安裝好 Cilium 了
 apiVersion: v1
 kind: Pod
 metadata:
-name: client
-labels:
-app: client
+  name: client
+  labels:
+    app: client
 spec:
-containers:
-- name: client
-image: nicolaka/netshoot
-command: ["sleep", "3600"]
+  containers:
+	  - name: client
+	    image: nicolaka/netshoot
+	    command: ["sleep", "3600"]
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-name: server
-labels:
-app: server
+  name: server
+  labels:
+    app: server
 spec:
-containers:
-- name: server
-image: nginx
+  containers:
+	  - name: server
+	    image: nginx
 ```
 
 
 然後請連線到任一個 worker node
 
+## Cilium CNI (cilium-cni)
+
 這就是跟著 CNI 實作出來的 CNI Plugin，所以就是一個 Binary 檔案，每個 Node 身上都會有這個 Binary 檔案，我們可以在 /opt/cni/bin/ 目錄下找到它
 
 ```
 $ ls -l /opt/cni/bin/cilium-cni
+
 -rwxr-xr-x 1 root root 69714464 Sep 14 19:01 /opt/cni/bin/cilium-cni
 ```
 
@@ -113,9 +116,10 @@ Hubble 的主要職責是為 Cilium 提供網路可觀測性 (Network Observabil
 Hubble 由以下幾個部分組成
 
 -
-**Hubble Server**：內嵌於 Cilium Agent 中，直接從 eBPF 收集網路流量數據，並提供 gRPC API 供查詢。 -
-**Hubble Relay**：一個獨立的組件，它會自動發現 Cluster 中所有的 Hubble Server，並提供一個單一的、Cluster 範圍的 API 端點 -
-**Hubble UI**：一個強大的 Web 圖形介面，可以動態生成服務依賴關係圖，即時顯示服務間的網路流量、HTTP 請求、DNS 查詢，甚至是 Network Policy 的阻擋情況。 -
+**Hubble Server**：內嵌於 Cilium Agent 中，直接從 eBPF 收集網路流量數據，並提供 gRPC API 供查詢。
+**Hubble Relay**：一個獨立的組件，它會自動發現 Cluster 中所有的 Hubble Server，並提供一個單一的、Cluster 範圍的 API 端點
+**Hubble UI**：一個強大的 Web 圖形介面，可以動態生成服務依賴關係圖，即時顯示服務間的網路流量、HTTP 請求、DNS 查詢，甚至是 Network Policy 的阻擋情況。 
+![[Pasted image 20260511164244.png]]
 **Hubble CLI**：一個命令列工具，讓開發者和維運人員可以方便地從終端機中查詢和過濾即時的網路流量事件。
 
 可以用以下指令找到 hubble-relay, hubble-ui
@@ -124,8 +128,8 @@ Hubble 由以下幾個部分組成
 kubectl get deploy -n kube-system | grep hubble
 ```
 
-
--
+## 小結
+---
 **Cilium CNI**: 和 Contianer runtime 交互，處理最基本網路配置，會透過 REST API 和 Cilium Agent 溝通 -
 **Cilium Agent**: 在每個 Node 上執行具體的網路與安全任務 -
 **Cilium Operator**: 後勤支援、管理和協調 IP -

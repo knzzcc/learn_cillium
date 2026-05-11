@@ -11,27 +11,19 @@ Day 1 已經認識了 Cilium 要解決的痛點和問題，Day 2 我們將來在
 
 - 3 台 Ubuntu 24 VM (1 control plane + 2 worker nodes)，可以自由選擇任意方式（例如：AWS EC2, 自己的電腦開 VM）
 
--
-Arc: x86_64
+- Arc: x86_64
+- Linux Distribution: Ubuntu 24.04.3 LTS
+- Linux Kernel: 6.14.0-1011-aws
 
--
-Linux Distribution: Ubuntu 24.04.3 LTS
-
--
-Linux Kernel: 6.14.0-1011-aws
-
--
-K8s
+- K8s
 
 `Client Version: v1.32.9 Kustomize Version: v5.5.0 Server Version: v1.32.9`
 
--
-containerd
+- containerd
 
 `[containerd.io](http://containerd.io/) 1.7.27 05044ec0a9a75232cad458027ca83437aae3f4da`
 
--
-kubeadm
+- kubeadm
 
 `kubeadm version: &version.Info{Major:"1", Minor:"32", GitVersion:"v1.32.9", GitCommit:"cea7087b31eb788b75934d769a28f058ab309318", GitTreeState:"clean", BuildDate:"2025-09-09T19:44:20Z", GoVersion:"go1.23.12", Compiler:"gc", Platform:"linux/amd64"}`
 
@@ -42,7 +34,7 @@ kubeadm
 
 Control Plane 配置好之後，會出現以下指令，記得保留好後面會用到：
 
-```
+```shell
 kubeadm join 10.13.1.243:6443 --token 2j6u0d.x6nd6vwl3h5mwmt3 \
 --discovery-token-ca-cert-hash sha256:6ef26555a8ba65424a603b18ab34b9068d5d838f2e9971b254934a74d1bcb701
 ```
@@ -50,7 +42,7 @@ kubeadm join 10.13.1.243:6443 --token 2j6u0d.x6nd6vwl3h5mwmt3 \
 
 如果找不到上面的指令，那請執行以下指令：
 
-```
+```shell
 kubeadm token create --print-join-command
 ```
 
@@ -59,12 +51,13 @@ kubeadm token create --print-join-command
 
 如果都沒問題，照理來說在 Control Plane 會看到以下輸出：
 
-```
+```shell
 $ kubectl get no
-NAME STATUS ROLES AGE VERSION
-control-plane NotReady control-plane 10m v1.32.9
-worker-1 NotReady <none> 8m6s v1.32.9
-worker-2 NotReady <none> 3m46s v1.32.9
+
+NAME            STATUS     ROLES           AGE     VERSION
+control-plane   NotReady   control-plane   10m     v1.32.9
+worker-1        NotReady   <none>          8m6s    v1.32.9
+worker-2        NotReady   <none>          3m46s   v1.32.9
 ```
 
 
@@ -87,14 +80,36 @@ worker-2 NotReady <none> 3m46s v1.32.9
 
 要實際換成你的 IP address，例如:`--set k8sServiceHost=10.13.1.243`
 
-，然後 clusterPoolIPv4PodCIDRList 不要跟 Node 網段一樣`helm install cilium cilium/cilium \ --namespace kube-system \ --version 1.18.1 \ --set kubeProxyReplacement=true \ --set k8sServiceHost=10.13.1.243 \ # <control-plane-ip> --set k8sServicePort=6443 \ --set ipam.mode=cluster-pool \ --set ipam.operator.clusterPoolIPv4PodCIDRList=10.244.0.0/16 \ --set ipam.operator.clusterPoolIPv4MaskSize=24 \ --set hubble.relay.enabled=true \ --set hubble.ui.enabled=true \ --set externalIPs.enabled=true \ --set nodePort.enabled=true \ --set hostPort.enabled=true \ --set bpf.masquerade=true \ --set enableIPv4Masquerade=true \ --set enableIPv6Masquerade=false \ --set policyAuditMode=false`
+，然後 clusterPoolIPv4PodCIDRList 不要跟 Node 網段一樣
+```
+helm install cilium cilium/cilium \
+  --namespace kube-system \
+  --version 1.18.1 \
+  --set kubeProxyReplacement=true \
+  --set k8sServiceHost=10.13.1.243 \ # <control-plane-ip>
+  --set k8sServicePort=6443 \
+  --set ipam.mode=cluster-pool \
+  --set ipam.operator.clusterPoolIPv4PodCIDRList=10.244.0.0/16 \
+  --set ipam.operator.clusterPoolIPv4MaskSize=24 \
+  --set hubble.relay.enabled=true \
+  --set hubble.ui.enabled=true \
+  --set externalIPs.enabled=true \
+  --set nodePort.enabled=true \
+  --set hostPort.enabled=true \
+  --set bpf.masquerade=true \
+  --set enableIPv4Masquerade=true \
+  --set enableIPv6Masquerade=false \
+  --set policyAuditMode=false
+```
 
--
-檢查 Cilium 各 Pods 是否 Running
+
+- 檢查 Cilium 各 Pods 是否 Running
 
 `kubectl -n kube-system get po`
 
+## 體驗 Cilium
 
+### 安裝 Cilium CLI
 https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#install-the-cilium-cli
 
 ```
@@ -132,46 +147,40 @@ kubectl -n kube-system get pods -l k8s-app=cilium
 ```
 
 
-這裡我將創建兩個 Pods，一個是 `client`
-
-(netshoot) 一個是 `server`
-
-(NGINX)
+這裡我將創建兩個 Pods，一個是 `client` (netshoot) 一個是 `server` (NGINX)
 
 我們透過指定 `.spec.nodeName`
 
 來強行控制 Schedule 到哪個 Worker Node，這次我們先將 Pods 都調度到同一節點
 
-建立 `test-pods.yaml`
-
-:
-
+建立 `test-pods.yaml` :
 ```
 vim test-pods.yaml
 ```
 
 
-```
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
-name: client
+  name: client
 spec:
-nodeName: worker-1 # 指定 Schedule 到 woerker-1
-containers:
-- name: client
-image: nicolaka/netshoot
-command: ["sleep", "3600"]
+  nodeName: worker-1 # 指定 Schedule 到 woerker-1
+  containers:
+  - name: client
+    image: nicolaka/netshoot
+    command: ["sleep", "3600"]
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-name: server
+  name: server
 spec:
-nodeName: worker-1 # 指定 Schedule 到 woerker-1
-containers:
-- name: server
-image: nginx
+  nodeName: worker-1 # 指定 Schedule 到 woerker-1
+  containers:
+  - name: server
+    image: nginx
+
 ```
 
 
@@ -184,17 +193,14 @@ kubectl apply -f test-pods.yaml
 
 ```
 $ kubectl get po -o wide
-NAME READY STATUS RESTARTS AGE IP NODE NOMINATED NODE READINESS GATES
-client 1/1 Running 0 26s 10.244.2.136 worker-1 <none> <none>
-server 1/1 Running 0 26s 10.244.2.239 worker-1 <none> <none>
+
+NAME     READY   STATUS    RESTARTS   AGE   IP             NODE       NOMINATED NODE   READINESS GATES
+client   1/1     Running   0          26s   10.244.2.136   worker-1   <none>           <none>
+server   1/1     Running   0          26s   10.244.2.239   worker-1   <none>           <none>
 ```
 
 
-接著來試試看從 `client`
-
-Pod 向 `server`
-
-Pod 發出 HTTP 請求是否能成功得到回應：
+接著來試試看從 `client` Pod 向 `server` Pod 發出 HTTP 請求是否能成功得到回應：
 
 ```
 SERVER_IP=$(kubectl get po server -o jsonpath='{.status.podIP}')
@@ -211,7 +217,6 @@ kubectl exec client -- curl -s $SERVER_IP
 kubectl delete -f test-pods.yaml
 ```
 
-
 ```
 vim test-pods.yaml
 ```
@@ -221,23 +226,23 @@ vim test-pods.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-name: client
+  name: client
 spec:
-nodeName: worker-1
-containers:
-- name: client
-image: nicolaka/netshoot
-command: ["sleep", "3600"]
+  nodeName: worker-1
+  containers:
+  - name: client
+    image: nicolaka/netshoot
+    command: ["sleep", "3600"]
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-name: server
+  name: server
 spec:
-nodeName: worker-2 # 指定 Schedule 到 woerker-2
-containers:
-- name: server
-image: nginx
+  nodeName: worker-2 # 指定 Schedule 到 woerker-2
+  containers:
+  - name: server
+    image: nginx
 ```
 
 
@@ -245,9 +250,10 @@ image: nginx
 
 ```
 $ kubectl get po -o wide
-NAME READY STATUS RESTARTS AGE IP NODE NOMINATED NODE READINESS GATES
-client 1/1 Running 0 4s 10.244.2.230 worker-1 <none> <none>
-server 1/1 Running 0 4s 10.244.1.106 worker-2 <none> <none>
+
+NAME     READY   STATUS    RESTARTS   AGE   IP             NODE       NOMINATED NODE   READINESS GATES
+client   1/1     Running   0          4s    10.244.2.230   worker-1   <none>           <none>
+server   1/1     Running   0          4s    10.244.1.106   worker-2   <none>           <none>
 ```
 
 

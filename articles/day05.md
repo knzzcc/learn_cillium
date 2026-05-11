@@ -31,6 +31,7 @@ DAY
 
 可以參考此文件得知有哪些 BPF Maps 類型
 
+![[Pasted image 20260511164619.png]]
 
 整理一下，BPF Maps 解決以下問題：
 
