@@ -97,39 +97,31 @@
 
 ---
 
-## 閱讀策略：三輪學習法
+## 閱讀策略（以 K8s 管理者 + 懂網路為目標）
 
-### 第一輪：概念建立
-**只讀基礎四篇，建立 eBPF 的 mental model**
+### 主線：概念 + 整體運作
 
+**第一步：eBPF 基礎概念**
 ```
 Day01 → Day04 → Day05 → Day06
 痛點    eBPF    BPF Maps  專有名詞
 ```
 
-### 第二輪：整體走一遍（略過原始碼）
-**遇到原始碼區塊先略過，只看文字說明和流程圖，目標是建立「封包走哪條路」的直覺**
-
+**第二步：Cilium 怎麼運作（遇到原始碼區塊直接略過）**
 ```
 Day07 → Day08 → Day09 → Day10   （Pod 生命週期）
 Day11 → Day12 → Day13 → Day14 → Day15   （Datapath）
 Day16 → Day17 → Day18   （Network Policy）
 Day19 → Day20 → Day21   （Service）
 Day22 → Day23 → Day24 → Day25 → Day26   （進階功能）
-Day27 → Day28 → Day29   （實戰案例）
 ```
 
-### 第三輪：Follow Source Code
-**有了完整 mental model 後，回頭看原始碼，這時你知道每段 code 在整個 datapath 的哪個位置**
+### 實戰：除錯直覺
 
-| 文章 | 原始碼類型 | 重點 |
-|---|---|---|
-| [Day10](articles/day10.md) | Go + BPF C | BPF 物件載入流程 |
-| [Day12](articles/day12.md) | BPF C | ARP reply 的 BPF 處理 |
-| [Day13](articles/day13.md) | BPF C | `bpf_lxc.c`、`local_delivery.h` |
-| [Day15](articles/day15.md) | BPF C | 跨 Node overlay 發送邏輯 |
-| [Day17](articles/day17.md) | BPF C | Envoy redirect 的 BPF hook |
-| [Day18](articles/day18.md) | BPF C | DNS Proxy 的 BPF 程式 |
-| [Day29](articles/day29.md) | Go | Pod Ready 慢的控制面 bug |
+```
+Day27 → Day28 → Day29   （真實踩坑案例）
+```
 
-> **原則：第二輪不要卡在源碼。先建立直覺，源碼是用來驗證直覺的，不是用來建立直覺的。**
+### Source Code：不排進主線
+
+遇到某個行為不理解時，再帶著問題去追對應文章的原始碼。管理者只需要知道「這個機制在哪個點介入」，不需要逐行讀懂。
