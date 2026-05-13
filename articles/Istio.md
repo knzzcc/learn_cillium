@@ -388,8 +388,19 @@ timedatectl
 
 免密碼 在windows上
 ssh-keygen -t ed25519
-```
+```bash
 type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh user@192.168.1.100 "cat >> .ssh/authorized_keys"
 ```
 
 1433 或長的
+
+有講到cloud-init
+[在 Windows PowerShell 端建立 SSH 公鑰認證，免密碼登入 Ubuntu Server - HackMD](https://hackmd.io/@Eudicotz/r1IcI9EOlx)
+[在 Windows 上使用 SSH 私鑰連接到 Linux 主機：全面指南 | 技術視野洞察 - Dennis的專業視角](https://most.tw/posts/systemarchitect/redhatloginwithssh/)
+[ssh-add 报错：Error connecting to agent No such file or directory - 意气风发胡小图 - 博客园](https://www.cnblogs.com/huxiaotu/p/18428095)
+[Tailscale + SSH 多设备并网完整教程 · Issue #147 · QiYongchuan/MyGitBlog](https://github.com/QiYongchuan/MyGitBlog/issues/147)
+ssh -o BatchMode=yes kano@192.168.137.101 "echo 免密成功"
+
+ssh -vvv kano@192.168.137.150
+
+Failed to open file:C:/Users/redha/.ssh/known_hosts2
