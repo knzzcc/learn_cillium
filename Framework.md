@@ -47,3 +47,7 @@
 | 找踩坑經驗 | GitHub issue、HackMD、個人部落格 |
 | 找最新動態 | Twitter/X 追關鍵人物、CNCF blog |
 | 找攻擊手法 | freebuf、seebug、conference paper |
+
+
+
+TODO 反思以延卡在哪一個環節
