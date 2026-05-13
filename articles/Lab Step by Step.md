@@ -73,6 +73,21 @@ spec:
 ```
 
 
+GitHub Actions / GitLab Runner 不是必須的。
+這篇文章做的是完整的 CI/CD 流程：push code → 自動 build image → 更新 manifest → ArgoCD 自動部署。GitHub Actions 負責的是 **CI（build image + 更新 YAML）** 那段。
+
+但 ArgoCD 本身只管 **CD（持續部署）**，它做的事就是監控 Git repo，發現 YAML 有變就自動同步到 cluster。所以你可以拆開用：
+
+**只玩 ArgoCD 的話：**
+1. 建一個 Git repo 放 K8s manifest（deployment.yaml、service.yaml）
+2. ArgoCD 接上那個 repo
+3. 你手動改 YAML、push 上去
+4. ArgoCD 偵測到變更，自動部署
+
+這樣完全不需要 GitHub Actions，你手動 push 就等於觸發部署。ArgoCD 的核心價值是「Git 上的 YAML = cluster 的實際狀態」，跟 CI 工具無關。
+
+GitHub Actions 只是讓「build image → 更新 YAML」這段也自動化而已，學習階段先跳過沒差。
+
 [吳東軒 - HackMD](https://hackmd.io/@wu-andy)  大量操作筆記
 **Istio 安裝（約 1-1.5 小時）**
 1. 裝 istioctl CLI — 2 分鐘
@@ -84,6 +99,28 @@ spec:
 7. 測試 traffic management：routing、canary、fault injection — 20-30 分鐘
 8. 測試 mTLS — 10 分鐘
 
+Flannel也可以裝Istio
+但有幾點你可能需要考慮：
+- **性能損耗 (Double Encapsulation)**： 如果你在 Istio 中開啟了 **mTLS (雙向 TLS 加密)**，且 Flannel 也在底層進行了封裝（如 VXLAN），數據包會經過多次處理。這通常不會造成大問題，但在極高性能需求的環境下需要測試延遲。
+    
+- **CNI 的限制**： Flannel 本身功能較為單一，它**不支援 Network Policy**（即 Kubernetes 原生的防火牆規則）。如果你需要「Pod A 不能存取 Pod B」這種硬性隔離，通常會改用 **Calico** 或是在 Flannel 之上加掛 **Canal**。Istio 雖然也能做授權控制（AuthorizationPolicy），但它是基於應用層（L7）的。
+    
+- **MTU (最大傳輸單元)**： 因為 Flannel 的封裝（VXLAN）會佔用一些位元組，如果 MTU 設置不當，可能會導致 Istio 的大流量請求出現掉包或效能下降。
+
+istioctl和cilliumctl只要在master裝就好了?
+對的
+
+worker1上面推薦裝甚麼?
+
+ Claude responded: worker 上面不用額外裝什麼，它就是純粹的工作節點。
+worker 上面不用額外裝什麼，它就是純粹的工作節點。
+
+給我istio的建置操作指南
 
 Bilibili
 Linux网络命名空间核心 | 虚拟网线、虚拟交换机、虚拟路由器
+
+
+Flux不太需要另外玩，ArgoCD有UI，Flux純CLI
+
+ArgoCD 玩透，目標包含 App of Apps pattern、ApplicationSet、多環境部署、Sync Policy、Health Check、Rollback 這些
