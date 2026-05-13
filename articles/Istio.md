@@ -245,3 +245,133 @@ K8s 的 Service 預設是 ClusterIP，只有 cluster 內部能連。要從外面
 **總結最推薦的組合：**
 
 Host-Only 網段 + Windows 加靜態路由 + K8s 用 NodePort 或 MetalLB。這樣最乾淨，不依賴外部網路，隨時都能連。
+
+通常 Ubuntu Desktop 裝完 SSH server 後預設就允許密碼登入，但如果不行就改一下設定：
+```bash
+sudo apt install openssh-server
+sudo systemctl enable --now ssh
+```
+
+確認 `/etc/ssh/sshd_config` 裡面這行：
+```
+PasswordAuthentication yes
+```
+
+如果被設成 `no` 或被註解掉，改成 `yes` 然後：
+```bash
+sudo systemctl restart ssh
+```
+
+
+SSH
+注音 --> 裝成倉頡?
+```bash
+sudo apt install ibus-chewing language-pack-zh-hant language-pack-gnome-zh-hant
+```
+
+VMWare網路
+
+遠端連線
+sudo apt install xrdp
+sudo apt install tigervnc-standalone-server -y
+
+
+Master：  4 CPU / 8GB RAM / 15GB disk
+Worker1： 2 CPU / 6GB RAM / 15GB disk
+Worker2： 2 CPU / 6GB RAM / 15GB disk
+
+
+vb terraform支援度比 vmware好，但是社群維護的有時候還是會怪怪
+vSphere/ESXi
+- ESXi 是 bare-metal hypervisor，裝下去整台機器就只能當 VM host，你的 Ubuntu 桌面沒了
+- 你要額外一台電腦或筆電透過 vSphere Client 網頁去管理
+- 免費版 ESXi 功能被砍很多，Broadcom 收購後授權更混亂
+
+
+init snapshot
+```
+# 1. 更新系統（最花時間，看網速）
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl openssh-server net-tools
+
+# 2. 關 swap
+sudo swapoff -a
+sudo sed -i '/swap/d' /etc/fstab
+
+# 3. 載入 kernel modules
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+# 4. sysctl 設定
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+EOF
+sudo sysctl --system
+
+# 5. 裝 containerd
+sudo apt install -y containerd
+sudo mkdir -p /etc/containerd
+containerd config default | sudo tee /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+sudo systemctl restart containerd
+
+# 6. 裝 kubeadm kubelet kubectl
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt update
+sudo apt install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+
+# 7. 禁用 cloud-init 網路
+echo "network: {config: disabled}" | sudo tee /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+```
+
+改hostname
+
+```bash
+# 改 hostname
+sudo hostnamectl set-hostname master
+
+# 確認
+hostnamectl
+```
+
+三台分別改：
+```bash
+# master
+sudo hostnamectl set-hostname master
+
+# worker1
+sudo hostnamectl set-hostname worker1
+
+# worker2
+sudo hostnamectl set-hostname worker2
+```
+
+改網路
+```bash
+sudo nano /etc/netplan/01-static.yaml
+```
+
+**master：**
+```yaml
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: no
+      addresses:
+        - 192.168.137.101/24
+      routes:
+        - to: default
+          via: 192.168.137.1
+      nameservers:
+        addresses:
+          - 8.8.8.8
+```
