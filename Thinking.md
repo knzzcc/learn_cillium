@@ -77,7 +77,13 @@
 
 ## 對門檻的重新認識
 
-Jimmy Song 那類社群講者，內容深度未必很高，但持續輸出就能建立能見度。
+Johnny Sung 那類社群講者，內容深度未必很高，但持續輸出就能建立能見度。
+CI/CD 落地指南：用開源 Jenkins & Ansible 打造自動化部署平台 @ DevOps Taiwan Meetup #76
+使用 Kong 與 GitOps 來管理您企業的 API 呼叫 @ 2024 台灣雲端大會
+ArgoCD 的雷 碰過的人就知道 @TSMC IT Community Meetup #4
+Kubernetes 地端自建 v.s. GKE，哪個更適合你？ @Devfest Taipei 2024
+
+
 
 K8s 網路這塊，**講得透就很厲害**，而且天然可以拆成好幾期：
 - veth / network namespace 基礎
