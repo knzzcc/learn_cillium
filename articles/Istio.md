@@ -375,3 +375,21 @@ network:
         addresses:
           - 8.8.8.8
 ```
+
+設定vm時間utc8 taipei
+```bash
+sudo timedatectl set-timezone Asia/Taipei
+```
+
+確認：
+```bash
+timedatectl
+```
+
+免密碼 在windows上
+ssh-keygen -t ed25519
+```
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh user@192.168.1.100 "cat >> .ssh/authorized_keys"
+```
+
+1433 或長的
