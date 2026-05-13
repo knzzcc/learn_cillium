@@ -404,3 +404,13 @@ ssh -o BatchMode=yes kano@192.168.137.101 "echo 免密成功"
 ssh -vvv kano@192.168.137.150
 
 Failed to open file:C:/Users/redha/.ssh/known_hosts2
+
+get_agent_identities: ssh_agent_bind_hostkey: invalid format
+
+[Linux｜免密登录又又又失败了？ - 知乎](https://zhuanlan.zhihu.com/p/667251729)
+
+-vvv之外 server端sshd也開啟debug模式
+
+字符問題啊
+
+Get-Content 才生效
