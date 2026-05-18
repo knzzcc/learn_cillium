@@ -1,0 +1,192 @@
+做運維的時候比較常用的指令，和關鍵目錄 值得記憶的
+
+5月14日
+
+## Claude responded: 這是個很實用的問題。讓我整理一份運維常用指令與關鍵目錄的速查表給你。
+
+這是個很實用的問題。讓我整理一份運維常用指令與關鍵目錄的速查表給你。
+
+### 系統資訊與狀態
+
+`uname -a` 查看核心版本與系統架構，`hostnamectl` 看主機名與 OS 版本。`uptime` 看開機時間與負載，`w` 或 `who` 看目前登入的使用者。`dmesg -T` 查看核心訊息（加 -T 顯示人類可讀時間），`last reboot` 看重開歷史。
+
+### 資源監控
+
+`top` / `htop` 即時看 CPU 與記憶體，`vmstat 1` 看 CPU、記憶體、IO 的即時變化。`free -h` 看記憶體使用量，`df -h` 看磁碟空間，`du -sh /path/*` 找哪個目錄佔空間。`iostat -x 1` 看磁碟 IO，`iotop` 看哪個 process 在吃 IO。`sar` 看歷史效能數據（需裝 sysstat）。
+
+### 程序管理
+
+`ps aux` 列出所有程序，`ps -ef --forest` 看父子關係樹。`kill -9 PID` 強制終止，`kill -15 PID` 優雅終止。`pgrep -a nginx` 找特定程序，`pkill -f pattern` 按名稱殺。`strace -p PID` 追蹤系統呼叫，`lsof -p PID` 看程序開了哪些檔案，`lsof -i :80` 看誰佔了 port 80。
+
+### 網路
+
+`ss -tlnp` 看監聽中的 TCP port（取代 netstat），`ss -s` 看連線統計。`ip a` 看網卡 IP，`ip r` 看路由表。`curl -vso /dev/null https://example.com` 測 HTTP 連線細節，`tcpdump -i eth0 port 443 -nn` 抓封包。`dig +short example.com` 查 DNS，`mtr example.com` 結合 ping 與 traceroute。`iptables -L -n -v` 看防火牆規則（或 `nft list ruleset`）。
+
+### 檔案與搜尋
+
+`find / -name "*.log" -mtime -1` 找一天內修改的 log，`find / -size +100M` 找大檔案。`grep -rn "error" /var/log/` 遞迴搜尋關鍵字，`grep -C3` 顯示上下文。`tail -f /var/log/syslog` 即時追蹤 log，`journalctl -fu nginx` 追 systemd 服務 log。`rsync -avz src/ dest/` 同步檔案（比 cp 強大），`tar czf backup.tar.gz /path` 打包壓縮。
+
+### 使用者與權限
+
+`id username` 看使用者資訊，`whoami` 看當前身份。`chmod 755 file`、`chown user:group file` 改權限與擁有者。`visudo` 編輯 sudo 設定，`getfacl file` 看 ACL 權限。`passwd -S user` 看密碼狀態，`faillog -a` 看登入失敗紀錄。
+
+### 服務管理（systemd）
+
+`systemctl status/start/stop/restart nginx` 管理服務，`systemctl enable/disable nginx` 設定開機啟動。`systemctl list-units --failed` 列出失敗的服務，`systemctl daemon-reload` 重載 unit 檔。`journalctl -u nginx --since "1 hour ago"` 查特定時段 log。
+
+------
+
+### 關鍵目錄速查
+
+**設定類**：`/etc/` 是所有設定的大本營。常看的有 `/etc/nginx/`、`/etc/ssh/sshd_config`、`/etc/fstab`（掛載）、`/etc/hosts`、`/etc/resolv.conf`（DNS）、`/etc/crontab` 與 `/etc/cron.d/`（排程）、`/etc/sysctl.conf`（核心參數）、`/etc/security/limits.conf`（資源限制）。
+
+**Log 類**：`/var/log/` 底下住著 `syslog`、`auth.log`（登入紀錄）、`kern.log`、`dmesg`、以及各服務自己的子目錄如 `/var/log/nginx/`。systemd 的 log 用 `journalctl` 查。
+
+**程序與系統資訊**：`/proc/` 是核心暴露的虛擬檔案系統，常看 `/proc/cpuinfo`、`/proc/meminfo`、`/proc/loadavg`、`/proc/PID/` 可以看單一程序的詳細狀態（fd、maps、status）。`/sys/` 則是裝置與核心模組的參數。
+
+**暫存與執行時**：`/tmp/` 暫存檔（重開會清）、`/var/run/`（或 `/run/`）放 PID 檔與 socket、`/var/spool/cron/` 放使用者的 crontab。
+
+**應用與資料**：`/opt/` 常放第三方軟體、`/srv/` 放服務資料、`/var/lib/` 放服務持久資料（如 `/var/lib/mysql/`、`/var/lib/docker/`）。
+
+**使用者家目錄**：`~/.bashrc`、`~/.ssh/`（authorized_keys、config）是常需要動的地方。
+
+------
+
+### 救火時的 SOP 速查
+
+遇到問題時的排查順序大致是：先 `uptime` 看負載 → `free -h` 看記憶體 → `df -h` 看磁碟 → `dmesg -T | tail` 看核心有沒有報錯 → `journalctl -xe` 看最近的錯誤 → `ss -tlnp` 確認服務有沒有在聽 → 進 `/var/log/` 翻對應的 log。這個流程能解決大部分第一時間的問題定位。
+
+如果你想要我做成一份可以下載的 cheatsheet（比如 PDF 或 markdown），隨時說一聲。
+
+## You said: 比我想像的還要多很多，哪些需要練到肌肉記憶?
+
+比我想像的還要多很多，哪些需要練到肌肉記憶?
+
+5月14日
+
+2 / 2
+
+## Claude responded: 好問題。真正需要練到「不用想就打出來」的其實不多，大概分三個層次：
+
+好問題。真正需要練到「不用想就打出來」的其實不多，大概分三個層次：
+
+### 第一層：每天都在用，必須秒打
+
+這些是你 SSH 進去後幾乎每次都會敲的：
+
+`top` / `htop` — 進去第一件事就是看負載跟誰在吃資源。`df -h` — 磁碟滿是最常見的事故之一，要能反射性地打。`free -h` — 記憶體夠不夠，一秒確認。`tail -f /var/log/xxx` — 追 log 是日常，`-f` follow 要變成本能。`ps aux | grep xxx` — 找程序，這個組合打到不用過腦。`systemctl status/restart xxx` — 服務掛了就是這兩個動作。`ss -tlnp` — port 有沒有在聽，取代以前的 netstat。
+
+### 第二層：出事時救火用，要很熟
+
+不是每天用，但事故發生時你不能慢慢查：
+
+`dmesg -T | tail` — 核心層級的錯誤，OOM kill、硬碟壞軌都在這。`journalctl -fu xxx` — systemd 環境下追服務 log 比 tail 更好用。`lsof -i :port` — port 被誰佔了，衝突時馬上要查。`kill -9` vs `kill -15` — 要知道什麼時候該優雅、什麼時候該強殺。`find / -size +100M` — 磁碟滿的時候要快速找出大檔案。`du -sh * | sort -rh | head` — 搭配上面，找出哪個目錄在膨脹。
+
+### 第三層：會用就好，用的時候查一下參數沒關係
+
+`tcpdump`、`strace`、`iptables`、`rsync` 的細部參數、`sar` 等等，這些情境比較特定，記住「它能幹嘛」就好，具體 flag 現查不丟人。
+
+------
+
+### 實際建議
+
+與其背指令，不如練「反射路徑」。碰到狀況時腦中浮現的應該是這樣的迴路：
+
+「機器慢」→ `top` → 看是 CPU 還是記憶體 → 再往下查。「服務掛了」→ `systemctl status` → 看錯誤訊息 → `journalctl -fu` 追 log。「磁碟滿」→ `df -h` → `du -sh` 逐層找 → 清 log 或搬檔案。「連不上」→ `ss -tlnp` 確認有沒有聽 → `curl` 本機測 → 往外查防火牆跟 DNS。
+
+第一層那七八個指令，建議花一兩週每天在測試機上刻意練習，打到手指比腦子快就對了。剩下的，知道存在、知道什麼時候該用，比背參數重要得多。
+
+## You said: netplan apply這又是啥?
+
+netplan apply這又是啥????
+
+5月14日
+
+## Claude responded: netplan apply 是 Ubuntu 18.
+
+`netplan apply` 是 Ubuntu 18.04 之後用來**套用網路設定**的指令。
+
+簡單說，Ubuntu 把網路設定改成用 YAML 檔來寫，放在 `/etc/netplan/` 底下（通常是像 `01-netcfg.yaml` 這樣的檔案）。你改完 YAML 之後，跑 `netplan apply` 它就會把設定生效，不用重開機。
+
+一個常見的設定檔長這樣：
+
+yaml
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: false
+      addresses:
+        - 192.168.1.100/24
+      gateway4: 192.168.1.1
+      nameservers:
+        addresses: [8.8.8.8, 8.8.4.4]
+```
+
+改完之後：
+
+`netplan apply` — 直接套用。如果你怕改壞斷線，可以先用 `netplan try`，它會套用設定但 120 秒內沒確認就自動 rollback，遠端改 IP 的時候這招能救命。
+
+### 跟你之前的知識怎麼接起來
+
+以前（CentOS / 舊 Ubuntu）改網路是編輯 `/etc/network/interfaces` 或 `/etc/sysconfig/network-scripts/ifcfg-eth0`，然後 `systemctl restart networking`。Netplan 就是 Ubuntu 把這件事重新包裝了一層，底層還是交給 systemd-networkd 或 NetworkManager 去執行。
+
+### 要不要練到肌肉記憶？
+
+如果你主力環境是 Ubuntu Server，`netplan apply` 和 `/etc/netplan/` 的位置要記住，但不算每天用。歸類在「改網路設定時要知道」的程度就夠了。真正要刻在腦裡的是 `netplan try` — 遠端作業改網路設定不用 try 的人，遲早會把自己鎖在外面。
+
+## You said: 這一塊不是跟cloud-init一起的
+
+這一塊不是跟cloud-init一起的
+
+5月14日
+
+## Claude responded: 對，你說得沒錯，它們確實常常綁在一起出現。
+
+對，你說得沒錯，它們確實常常綁在一起出現。
+
+在雲端 VM（AWS EC2、GCP、Azure 那些）上，開機流程大致是這樣的：
+
+**cloud-init** 是開機時的「初始化引擎」，VM 第一次啟動時它會去跟雲平台的 metadata service 拿資料（像是 hostname、SSH key、網路設定、user-data 腳本等），然後把這些東西寫進系統的對應位置。而網路設定這塊，在 Ubuntu 上 cloud-init 就是**自動產生 netplan 的 YAML 檔**。
+
+所以實際的關係是：cloud-init 是上游的生產者，netplan 是下游的消費者。開機時 cloud-init 從 metadata 拿到網路配置 → 寫出 `/etc/netplan/50-cloud-init.yaml` → netplan 讀這個檔案去設定網路。
+
+### 這帶來一個運維上的坑
+
+你如果直接手動改 `/etc/netplan/50-cloud-init.yaml` 然後 `netplan apply`，當下是會生效，但下次 cloud-init 跑的時候（重開機或某些觸發條件）它可能會把你的修改覆蓋掉。
+
+正確做法有兩種：
+
+一是自己另外建一個優先級更高的檔案，像 `99-custom.yaml`，netplan 會按檔名順序載入，後面的覆蓋前面的。
+
+二是直接告訴 cloud-init 不要管網路，在 `/etc/cloud/cloud.cfg.d/` 底下加一個檔案寫 `network: {config: disabled}`，這樣 cloud-init 就不會再碰網路設定了。
+
+### 實務上的判斷
+
+如果你管的是雲端 VM，cloud-init 跟 netplan 的關係要搞清楚，不然遲早會碰到「改了怎麼重開機又跑回去」的問題。如果是自建機房的實體機，通常不會有 cloud-init，那就是純 netplan 的事。
+
+## You said: 還有我不懂的地方嗎?
+
+還有我不懂的地方嗎??
+
+5月14日
+
+## Claude responded: 嗯，根據我們聊的脈絡，你目前掌握了指令操作和基本概念，但有幾塊你可能還沒踩過坑所以不知道自己不懂：
+
+嗯，根據我們聊的脈絡，你目前掌握了指令操作和基本概念，但有幾塊你可能還沒踩過坑所以不知道自己不懂：
+
+**systemd 的全貌** — 你知道 `systemctl` 管服務，但 systemd 其實管很多事：timer（取代 crontab）、mount、target（取代 runlevel）、slice（cgroup 資源控制）。很多人只把它當服務管理工具用，等到要寫自己的 service unit 檔或設定開機順序依賴時就卡住了。
+
+**cgroup 與資源限制** — 容器（Docker/K8s）底層就是靠這個。如果你之後會碰容器化，理解 cgroup v1/v2 怎麼限制 CPU、記憶體、IO 會讓你知道容器裡的資源限制到底在幹嘛。
+
+**SELinux / AppArmor** — 很多人碰到權限問題第一反應是 `chmod 777`，但有時候是 SELinux（CentOS）或 AppArmor（Ubuntu）在擋。不懂這層的話，debug 權限問題會很痛苦。
+
+**LVM 與磁碟管理** — `df -h` 你會看，但磁碟滿了之後要擴容，就涉及 LVM 的 PV、VG、LV 概念，雲端上擴磁碟也要懂這段才能把空間真的加進去。
+
+**網路更深的部分** — iptables/nftables 的 chain 邏輯、NAT 怎麼運作、bonding/VLAN 設定。目前你知道 `ss` 查 port，但封包從進來到被應用收到中間經過哪些關卡，這塊值得補。
+
+**日誌集中化** — 單機看 `journalctl` 夠用，但機器一多就需要 rsyslog 轉發、ELK/Loki 之類的集中 log 方案。
+
+你目前的路線比較偏哪邊？是雲端 VM 維運、容器/K8s、還是傳統機房？方向不同的話，優先補的東西差很多。

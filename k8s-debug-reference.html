@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K8s 容器化 Debug 全攻略</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e17;
+  --bg2: #111827;
+  --bg3: #1a2235;
+  --surface: #1e293b;
+  --border: #2d3a4f;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --accent: #38bdf8;
+  --accent2: #818cf8;
+  --green: #34d399;
+  --orange: #fb923c;
+  --red: #f87171;
+  --pink: #f472b6;
+  --yellow: #fbbf24;
+  --cyan: #22d3ee;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans TC', sans-serif;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Hero */
+.hero {
+  padding: 60px 24px 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 30% 50%, rgba(56,189,248,0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 50%, rgba(129,140,248,0.06) 0%, transparent 50%);
+  animation: drift 20s ease-in-out infinite alternate;
+}
+@keyframes drift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-30px, 20px); }
+}
+.hero h1 {
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 900;
+  letter-spacing: -1px;
+  position: relative;
+  background: linear-gradient(135deg, var(--accent), var(--accent2), var(--pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero .subtitle {
+  color: var(--text2);
+  font-size: 15px;
+  margin-top: 12px;
+  position: relative;
+  font-weight: 300;
+}
+
+/* Nav tabs */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,14,23,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  overflow-x: auto;
+  display: flex;
+  gap: 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 14px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color 0.2s;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active {
+  color: var(--accent);
+}
+.nav-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 18px;
+  right: 18px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+/* Content */
+.content { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+.section { display: none; animation: fadeIn 0.3s ease; }
+.section.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--accent); }
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-title .icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.card p, .card li { color: var(--text2); font-size: 14px; }
+.card p { margin-bottom: 10px; }
+.card ul { padding-left: 20px; margin-bottom: 10px; }
+.card li { margin-bottom: 4px; }
+
+/* Code blocks */
+.code-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 12px 0;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--green);
+}
+.code-block .comment { color: var(--text3); }
+.code-block .cmd { color: var(--accent); }
+.code-block .flag { color: var(--orange); }
+.code-block .arg { color: var(--pink); }
+
+/* Architecture diagram */
+.arch-diagram {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+  overflow-x: auto;
+}
+.arch-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+.arch-box {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 120px;
+  border: 1px solid;
+  transition: transform 0.2s;
+}
+.arch-box:hover { transform: scale(1.05); }
+.arch-box.kubelet { background: rgba(56,189,248,0.12); border-color: var(--accent); color: var(--accent); }
+.arch-box.cri { background: rgba(129,140,248,0.12); border-color: var(--accent2); color: var(--accent2); }
+.arch-box.runtime { background: rgba(52,211,153,0.12); border-color: var(--green); color: var(--green); }
+.arch-box.kernel { background: rgba(251,146,60,0.12); border-color: var(--orange); color: var(--orange); }
+.arch-box.container { background: rgba(244,114,182,0.12); border-color: var(--pink); color: var(--pink); }
+.arch-arrow {
+  color: var(--text3);
+  font-size: 18px;
+  user-select: none;
+}
+.arch-arrow.down {
+  display: block;
+  text-align: center;
+  margin: 4px 0;
+}
+
+/* Permission table */
+.perm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 12px 0;
+}
+.perm-table th {
+  background: var(--bg);
+  color: var(--text2);
+  font-weight: 600;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.perm-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  vertical-align: top;
+}
+.perm-table tr:hover td { background: rgba(56,189,248,0.04); }
+
+/* Tags */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tag.net { background: rgba(56,189,248,0.15); color: var(--accent); }
+.tag.sys { background: rgba(251,146,60,0.15); color: var(--orange); }
+.tag.sec { background: rgba(248,113,113,0.15); color: var(--red); }
+.tag.log { background: rgba(52,211,153,0.15); color: var(--green); }
+.tag.perf { background: rgba(244,114,182,0.15); color: var(--pink); }
+.tag.store { background: rgba(129,140,248,0.15); color: var(--accent2); }
+
+/* Collapsible */
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 16px 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+  user-select: none;
+}
+.collapsible-header:hover { border-color: var(--accent); background: var(--bg3); }
+.collapsible-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.collapsible-chevron {
+  transition: transform 0.2s;
+  color: var(--text3);
+  font-size: 12px;
+}
+.collapsible-header.open .collapsible-chevron { transform: rotate(180deg); }
+.collapsible-body {
+  display: none;
+  padding: 16px 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  margin-top: -9px;
+  margin-bottom: 12px;
+}
+.collapsible-body.open { display: block; animation: fadeIn 0.2s ease; }
+
+/* Flow chart */
+.flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin: 20px 0;
+}
+.flow-step {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 20px;
+  width: 100%;
+  max-width: 600px;
+  font-size: 14px;
+}
+.flow-step .step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.flow-step p { color: var(--text2); font-size: 13px; margin: 0; }
+.flow-connector {
+  width: 2px;
+  height: 20px;
+  background: var(--border);
+}
+
+/* Section header */
+.section-header {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 32px 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-header:first-child { margin-top: 0; }
+
+.subsection {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 24px 0 12px;
+}
+
+/* Highlight box */
+.highlight {
+  background: rgba(56,189,248,0.06);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+  font-size: 13px;
+  color: var(--text2);
+}
+.highlight.warn {
+  background: rgba(251,146,60,0.06);
+  border-left-color: var(--orange);
+}
+.highlight.danger {
+  background: rgba(248,113,113,0.06);
+  border-left-color: var(--red);
+}
+
+@media (max-width: 600px) {
+  .content { padding: 20px 14px 60px; }
+  .card { padding: 18px; }
+  .arch-row { gap: 8px; }
+  .arch-box { min-width: 90px; padding: 8px 12px; font-size: 12px; }
+  .perm-table { font-size: 11px; }
+  .perm-table th, .perm-table td { padding: 8px 6px; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>K8s 容器化 Debug 全攻略</h1>
+  <p class="subtitle">CRI 架構 → Linux Namespace → 權限模型 → Debug 工具鏈</p>
+</div>
+
+<div class="nav" id="nav">
+  <button class="nav-btn active" data-tab="arch">CRI 架構</button>
+  <button class="nav-btn" data-tab="ns">Namespace 隔離</button>
+  <button class="nav-btn" data-tab="perm">權限模型</button>
+  <button class="nav-btn" data-tab="net">網路 Debug</button>
+  <button class="nav-btn" data-tab="sys">系統 Debug</button>
+  <button class="nav-btn" data-tab="obs">可觀測性</button>
+  <button class="nav-btn" data-tab="playbook">Playbook</button>
+</div>
+
+<div class="content">
+
+<!-- ==================== CRI 架構 ==================== -->
+<div class="section active" id="tab-arch">
+  <h2 class="section-header">⚙️ CRI 架構總覽</h2>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(56,189,248,0.15);">🔗</span>
+      什麼是 CRI？
+    </div>
+    <p>Container Runtime Interface (CRI) 是 Kubernetes 定義的 gRPC 介面標準，讓 kubelet 可以透過統一的介面與不同的容器執行環境溝通，而不被綁定在特定實作上。</p>
+    <p>CRI 主要定義兩組服務：<strong>RuntimeService</strong>（管理 Pod sandbox 與容器的生命週期）和 <strong>ImageService</strong>（管理映像檔的拉取、列表、刪除）。</p>
+  </div>
+
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box kubelet">kubectl / API Server</div>
+    </div>
+    <div class="arch-arrow down">▼</div>
+    <div class="arch-row">
+      <div class="arch-box kubelet">kubelet</div>
+    </div>
+    <div class="arch-arrow down">▼ gRPC (CRI)</div>
+    <div class="arch-row">
+      <div class="arch-box cri">CRI Runtime</div>
+    </div>
+    <div class="arch-arrow down">▼</div>
+    <div class="arch-row">
+      <div class="arch-box runtime">containerd</div>
+      <span class="arch-arrow">│</span>
+      <div class="arch-box runtime">CRI-O</div>
+    </div>
+    <div class="arch-arrow down">▼ OCI Runtime Spec</div>
+    <div class="arch-row">
+      <div class="arch-box kernel">runc</div>
+      <span class="arch-arrow">│</span>
+      <div class="arch-box kernel">crun</div>
+      <span class="arch-arrow">│</span>
+      <div class="arch-box kernel">kata-runtime</div>
+    </div>
+    <div class="arch-arrow down">▼ syscalls</div>
+    <div class="arch-row">
+      <div class="arch-box container">Linux Kernel (namespaces, cgroups, seccomp)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(52,211,153,0.15);">📦</span>
+      各層角色說明
+    </div>
+    <p><strong>kubelet</strong>：節點代理，從 API Server 接收 PodSpec，透過 CRI 呼叫 runtime 建立/銷毀容器。</p>
+    <p><strong>containerd / CRI-O</strong>：高階 runtime，負責映像檔管理、容器 metadata、呼叫低階 runtime。containerd 是目前最主流的選擇（Docker Engine 底層也是它）。CRI-O 是 Red Hat 主導、專為 K8s 打造的輕量替代。</p>
+    <p><strong>runc / crun</strong>：低階（OCI）runtime，實際執行 clone()、設定 namespace、cgroup、seccomp profile，然後 exec 容器的 entrypoint。runc 是 Go 寫的參考實作，crun 是 C 寫的，啟動速度更快。</p>
+    <p><strong>kata-runtime</strong>：用輕量級 VM 取代 namespace 隔離，提供更強的安全邊界。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(129,140,248,0.15);">🔍</span>
+      CRI 層級的 Debug
+    </div>
+    <div class="code-block">
+<span class="comment"># 用 crictl 直接跟 CRI runtime 溝通（繞過 kubectl）</span>
+<span class="cmd">crictl</span> <span class="flag">ps</span>                      <span class="comment"># 列出容器</span>
+<span class="cmd">crictl</span> <span class="flag">pods</span>                    <span class="comment"># 列出 pod sandbox</span>
+<span class="cmd">crictl</span> <span class="flag">inspect</span> <span class="arg">&lt;container-id&gt;</span>   <span class="comment"># 容器詳細資訊</span>
+<span class="cmd">crictl</span> <span class="flag">logs</span> <span class="arg">&lt;container-id&gt;</span>      <span class="comment"># 容器日誌</span>
+<span class="cmd">crictl</span> <span class="flag">images</span>                  <span class="comment"># 列出映像檔</span>
+<span class="cmd">crictl</span> <span class="flag">stats</span>                   <span class="comment"># 容器資源用量</span>
+
+<span class="comment"># ctr 是 containerd 原生 CLI</span>
+<span class="cmd">ctr</span> <span class="flag">-n k8s.io containers list</span>
+<span class="cmd">ctr</span> <span class="flag">-n k8s.io tasks list</span>
+
+<span class="comment"># 檢查 containerd / CRI-O 服務狀態</span>
+<span class="cmd">systemctl</span> <span class="flag">status</span> <span class="arg">containerd</span>
+<span class="cmd">journalctl</span> <span class="flag">-u containerd</span> <span class="flag">--since "10 min ago"</span>
+    </div>
+    <div class="highlight">
+      <strong>何時用 crictl？</strong> 當 kubectl 無法正常運作（例如 API Server 掛了、kubelet 異常）時，直接到節點上用 crictl 是唯一的手段。也常用於確認「容器是否真的在跑」以排除 kubelet 層的問題。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(251,146,60,0.15);">🐋</span>
+      Docker 在這個架構中的位置
+    </div>
+    <p>Kubernetes 1.24 起移除了 dockershim。現在的 Docker Engine 底下其實也是 containerd，所以如果節點裝的是 Docker，K8s 會直接跟 containerd 溝通，Docker CLI 只是另一個 containerd 的前端。</p>
+    <p>如果是純 Docker 環境（非 K8s），debug 指令就是 <code class="mono">docker inspect</code>、<code class="mono">docker logs</code>、<code class="mono">docker exec</code> 等。</p>
+  </div>
+</div>
+
+<!-- ==================== Namespace 隔離 ==================== -->
+<div class="section" id="tab-ns">
+  <h2 class="section-header">🧱 Linux Namespace 隔離</h2>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(56,189,248,0.15);">📐</span>
+      容器 = Namespace + Cgroup + Root FS
+    </div>
+    <p>容器本質上不是虛擬機，而是利用 Linux kernel 的三個機制實現隔離：</p>
+    <p><strong>Namespace</strong> 隔離「看得到什麼」—— 每個容器有自己的 PID 樹、網路堆疊、掛載點等。<strong>Cgroup</strong> 限制「用得了多少」—— CPU、記憶體、I/O 的用量上限。<strong>OverlayFS / Root FS</strong> 提供獨立的檔案系統視角。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(52,211,153,0.15);">🗂️</span>
+      七種 Namespace
+    </div>
+    <table class="perm-table">
+      <thead>
+        <tr><th>Namespace</th><th>隔離什麼</th><th>Debug 意義</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">PID</td><td>Process ID 樹</td><td>容器內看不到宿主機 process；<code>shareProcessNamespace</code> 可打破</td></tr>
+        <tr><td class="mono">NET</td><td>網路堆疊（介面、路由、iptables）</td><td>每個 Pod 一個 net ns；同 Pod 容器共享；netshoot 掛入同 ns debug</td></tr>
+        <tr><td class="mono">MNT</td><td>掛載點</td><td>容器的檔案系統視角；hostPath volume 會穿越隔離</td></tr>
+        <tr><td class="mono">UTS</td><td>Hostname</td><td>容器 hostname 預設 = Pod name</td></tr>
+        <tr><td class="mono">IPC</td><td>共享記憶體、semaphore</td><td>同 Pod 容器共享 IPC ns</td></tr>
+        <tr><td class="mono">USER</td><td>UID/GID 映射</td><td>user namespace 啟用後 root in container ≠ root on host</td></tr>
+        <tr><td class="mono">CGROUP</td><td>Cgroup 根目錄視角</td><td>影響 /proc/self/cgroup 看到的路徑</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(244,114,182,0.15);">🔬</span>
+      從宿主機檢視 Namespace
+    </div>
+    <div class="code-block">
+<span class="comment"># 找到容器的 PID（在宿主機上）</span>
+<span class="cmd">crictl</span> <span class="flag">inspect</span> <span class="arg">&lt;container-id&gt;</span> | <span class="cmd">jq</span> <span class="arg">'.info.pid'</span>
+
+<span class="comment"># 查看該 PID 的 namespace</span>
+<span class="cmd">ls</span> <span class="flag">-la</span> <span class="arg">/proc/&lt;pid&gt;/ns/</span>
+
+<span class="comment"># 進入容器的 network namespace</span>
+<span class="cmd">nsenter</span> <span class="flag">-t &lt;pid&gt; -n</span> <span class="arg">ip addr</span>
+<span class="cmd">nsenter</span> <span class="flag">-t &lt;pid&gt; -n</span> <span class="arg">ss -tlnp</span>
+
+<span class="comment"># 進入所有 namespace（等同 docker exec）</span>
+<span class="cmd">nsenter</span> <span class="flag">-t &lt;pid&gt; -m -u -i -n -p</span> <span class="arg">/bin/sh</span>
+    </div>
+    <div class="highlight">
+      <strong>nsenter 是 debug 神器。</strong>當容器內沒有 shell 或工具時（distroless image），從宿主機用 nsenter 進入特定 namespace，搭配宿主機上的工具來除錯，比如進 net ns 跑 tcpdump。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(251,146,60,0.15);">⚡</span>
+      Cgroup 檢查
+    </div>
+    <div class="code-block">
+<span class="comment"># cgroup v2（現代系統）查看記憶體限制</span>
+<span class="cmd">cat</span> <span class="arg">/sys/fs/cgroup/&lt;cgroup-path&gt;/memory.max</span>
+<span class="cmd">cat</span> <span class="arg">/sys/fs/cgroup/&lt;cgroup-path&gt;/memory.current</span>
+
+<span class="comment"># 查看 CPU 配額</span>
+<span class="cmd">cat</span> <span class="arg">/sys/fs/cgroup/&lt;cgroup-path&gt;/cpu.max</span>
+
+<span class="comment"># 容器內簡易查看</span>
+<span class="cmd">cat</span> <span class="arg">/proc/self/cgroup</span>
+<span class="cmd">cat</span> <span class="arg">/sys/fs/cgroup/memory.max</span>   <span class="comment"># cgroup v2</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 權限模型 ==================== -->
+<div class="section" id="tab-perm">
+  <h2 class="section-header">🔐 權限模型</h2>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(248,113,113,0.15);">🛡️</span>
+      權限的三道防線
+    </div>
+    <p>容器的權限由三個層級共同決定，由外而內依序是：</p>
+    <p><strong>1. Linux Capabilities</strong> — 將傳統的 root 全權拆成細粒度的能力（約 40 種），容器可以只授予需要的 cap。</p>
+    <p><strong>2. Seccomp Profile</strong> — 白名單制過濾 system call，沒列的 syscall 直接拒絕。Docker/containerd 預設有一組 default profile 封鎖約 40+ 種危險 syscall。</p>
+    <p><strong>3. AppArmor / SELinux</strong> — MAC（強制存取控制），限制 process 能存取哪些檔案路徑和網路操作。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(56,189,248,0.15);">🧩</span>
+      常用 Linux Capabilities 一覽
+    </div>
+    <table class="perm-table">
+      <thead>
+        <tr><th>Capability</th><th>允許什麼</th><th>誰需要</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">NET_RAW</td><td>原始 socket（ping、tcpdump）</td><td>網路 debug 工具</td></tr>
+        <tr><td class="mono">NET_ADMIN</td><td>修改路由、iptables、介面</td><td>CNI plugin、iptables debug</td></tr>
+        <tr><td class="mono">SYS_PTRACE</td><td>ptrace（strace、gdb）</td><td>效能追蹤、debug attach</td></tr>
+        <tr><td class="mono">SYS_ADMIN</td><td>mount、bpf、namespace 操作</td><td>eBPF 工具、特權操作</td></tr>
+        <tr><td class="mono">SYSLOG</td><td>讀取 kernel ring buffer</td><td>dmesg</td></tr>
+        <tr><td class="mono">DAC_OVERRIDE</td><td>繞過檔案權限檢查</td><td>需存取他人檔案</td></tr>
+        <tr><td class="mono">CHOWN</td><td>改變檔案擁有者</td><td>init container 修復權限</td></tr>
+        <tr><td class="mono">NET_BIND_SERVICE</td><td>綁定 &lt;1024 port</td><td>容器內跑 80/443</td></tr>
+      </tbody>
+    </table>
+    <div class="highlight warn">
+      Docker 預設授予約 14 個 cap（包括 CHOWN、NET_RAW 等），K8s 預設跟隨 runtime。生產環境最佳實務是在 PodSpec 中 <code>drop: ["ALL"]</code> 再 <code>add</code> 需要的。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(52,211,153,0.15);">📝</span>
+      K8s SecurityContext 設定
+    </div>
+    <div class="code-block">
+<span class="comment"># Pod spec 範例</span>
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
+
+containers:
+- name: app
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+      add: ["NET_BIND_SERVICE"]
+    readOnlyRootFilesystem: true
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(129,140,248,0.15);">🔎</span>
+      權限相關 Debug
+    </div>
+    <div class="code-block">
+<span class="comment"># 查看容器 process 的 capabilities</span>
+<span class="cmd">cat</span> <span class="arg">/proc/1/status</span> | <span class="cmd">grep</span> <span class="arg">Cap</span>
+<span class="cmd">capsh</span> <span class="flag">--decode=</span><span class="arg">&lt;hex-value&gt;</span>
+
+<span class="comment"># 查看 seccomp 狀態</span>
+<span class="cmd">grep</span> <span class="arg">Seccomp</span> <span class="arg">/proc/1/status</span>
+<span class="comment"># 0=disabled, 1=strict, 2=filter</span>
+
+<span class="comment"># 檢查 AppArmor profile</span>
+<span class="cmd">cat</span> <span class="arg">/proc/1/attr/current</span>
+
+<span class="comment"># K8s RBAC 權限檢查</span>
+<span class="cmd">kubectl</span> <span class="flag">auth can-i</span> <span class="arg">create pods</span> <span class="flag">--as=system:serviceaccount:ns:sa</span>
+<span class="cmd">kubectl</span> <span class="flag">auth can-i</span> <span class="arg">--list</span> <span class="flag">--as=system:serviceaccount:ns:sa</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(244,114,182,0.15);">🚨</span>
+      Debug 工具的權限需求速查
+    </div>
+    <table class="perm-table">
+      <thead>
+        <tr><th>工具</th><th>所需 Capability</th><th>建議做法</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">ss / ip</td><td>無需額外權限</td><td>直接用</td></tr>
+        <tr><td class="mono">ping</td><td>NET_RAW</td><td>netshoot 或加 cap</td></tr>
+        <tr><td class="mono">tcpdump</td><td>NET_RAW</td><td>netshoot 掛入 net ns</td></tr>
+        <tr><td class="mono">iptables</td><td>NET_ADMIN</td><td>ephemeral container</td></tr>
+        <tr><td class="mono">strace</td><td>SYS_PTRACE</td><td>ephemeral + shareProcessNamespace</td></tr>
+        <tr><td class="mono">dmesg</td><td>SYSLOG</td><td>在宿主機或 debug node pod 執行</td></tr>
+        <tr><td class="mono">bpftrace</td><td>SYS_ADMIN + perfmon</td><td>privileged debug pod</td></tr>
+        <tr><td class="mono">mount</td><td>SYS_ADMIN</td><td>通常只在 debug pod</td></tr>
+        <tr><td class="mono">gdb</td><td>SYS_PTRACE</td><td>ephemeral container</td></tr>
+        <tr><td class="mono">lsof</td><td>SYS_PTRACE（跨 pid）</td><td>同 ns 內不需要</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 網路 Debug ==================== -->
+<div class="section" id="tab-net">
+  <h2 class="section-header">🌐 網路 Debug 工具</h2>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(56,189,248,0.15);">🔌</span>
+      ss — Socket 狀態速查
+    </div>
+    <div class="code-block">
+<span class="cmd">ss</span> <span class="flag">-tlnp</span>          <span class="comment"># TCP listening, 顯示 port + process</span>
+<span class="cmd">ss</span> <span class="flag">-tnp</span>           <span class="comment"># 所有 TCP 連線（established 等）</span>
+<span class="cmd">ss</span> <span class="flag">-s</span>              <span class="comment"># socket 統計摘要</span>
+<span class="cmd">ss</span> <span class="flag">-ti</span>             <span class="comment"># TCP 內部資訊（cwnd, rtt, retrans）</span>
+<span class="cmd">ss</span> <span class="flag">-tnp state time-wait</span> | <span class="cmd">wc</span> <span class="flag">-l</span>  <span class="comment"># TIME-WAIT 數量</span>
+<span class="cmd">ss</span> <span class="flag">-tnp dst :3306</span>  <span class="comment"># 連往 MySQL 的連線</span>
+<span class="cmd">ss</span> <span class="flag">-tnp src :8080</span>  <span class="comment"># 從 8080 出去的連線</span>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin-top:8px;">比 netstat 快得多，因為直接讀 kernel netlink socket 而非解析 /proc。排查 port 衝突、連線洩漏、TIME-WAIT 堆積的首選。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(52,211,153,0.15);">🛤️</span>
+      ip — 網路設定檢查
+    </div>
+    <div class="code-block">
+<span class="cmd">ip</span> <span class="flag">addr</span>            <span class="comment"># 介面 + IP 位址</span>
+<span class="cmd">ip</span> <span class="flag">route</span>           <span class="comment"># 路由表（default gw 是否正確）</span>
+<span class="cmd">ip</span> <span class="flag">neigh</span>           <span class="comment"># ARP 表</span>
+<span class="cmd">ip</span> <span class="flag">link show</span>       <span class="comment"># 介面 up/down 狀態、MTU</span>
+<span class="cmd">ip</span> <span class="flag">-s link</span>         <span class="comment"># 介面流量統計 + 錯誤計數</span>
+
+<span class="comment"># 在宿主機上檢視所有 network namespace</span>
+<span class="cmd">ip</span> <span class="flag">netns list</span>
+<span class="cmd">ip</span> <span class="flag">netns exec</span> <span class="arg">&lt;ns&gt;</span> <span class="cmd">ip addr</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(244,114,182,0.15);">🦈</span>
+      tcpdump / Wireshark / ksniff
+    </div>
+    <div class="code-block">
+<span class="comment"># 容器內或 nsenter 後抓封包</span>
+<span class="cmd">tcpdump</span> <span class="flag">-i eth0 -nn</span> <span class="arg">port 80</span>
+<span class="cmd">tcpdump</span> <span class="flag">-i any -w</span> <span class="arg">/tmp/cap.pcap</span>  <span class="comment"># 存檔用 Wireshark 開</span>
+
+<span class="comment"># ksniff：kubectl plugin，一鍵抓 pod 封包 → Wireshark</span>
+<span class="cmd">kubectl</span> <span class="flag">sniff</span> <span class="arg">&lt;pod-name&gt;</span> <span class="flag">-n &lt;namespace&gt;</span>
+
+<span class="comment"># netshoot 掛入目標容器的 net ns</span>
+<span class="cmd">docker</span> <span class="flag">run --rm -it --net=container:</span><span class="arg">&lt;target&gt;</span> <span class="arg">nicolaka/netshoot</span>
+<span class="cmd">kubectl</span> <span class="flag">debug -it</span> <span class="arg">&lt;pod&gt;</span> <span class="flag">--image=nicolaka/netshoot --target=</span><span class="arg">&lt;container&gt;</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(129,140,248,0.15);">🔎</span>
+      DNS / 連線測試
+    </div>
+    <div class="code-block">
+<span class="comment"># DNS 解析測試</span>
+<span class="cmd">nslookup</span> <span class="arg">kubernetes.default.svc.cluster.local</span>
+<span class="cmd">dig</span> <span class="arg">+short myservice.mynamespace.svc.cluster.local</span>
+
+<span class="comment"># 檢查 CoreDNS 是否正常</span>
+<span class="cmd">kubectl</span> <span class="flag">-n kube-system logs -l k8s-app=kube-dns</span>
+
+<span class="comment"># HTTP 連線測試</span>
+<span class="cmd">curl</span> <span class="flag">-v</span> <span class="arg">http://service-name:port/health</span>
+
+<span class="comment"># TCP 連通性</span>
+<span class="cmd">nc</span> <span class="flag">-zv</span> <span class="arg">db-host 5432</span>
+
+<span class="comment"># MTU / 封包大小問題排查</span>
+<span class="cmd">ping</span> <span class="flag">-M do -s 1400</span> <span class="arg">&lt;target&gt;</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(251,146,60,0.15);">📊</span>
+      nstat / /proc/net 計數器
+    </div>
+    <div class="code-block">
+<span class="comment"># 查看 TCP 重傳、UDP overflow 等計數器</span>
+<span class="cmd">nstat</span> <span class="flag">-sz</span> | <span class="cmd">grep</span> <span class="flag">-i retrans</span>
+<span class="cmd">nstat</span> <span class="flag">-sz</span> | <span class="cmd">grep</span> <span class="flag">-i drop</span>
+
+<span class="comment"># 或直接讀 /proc</span>
+<span class="cmd">cat</span> <span class="arg">/proc/net/snmp</span>    <span class="comment"># TCP/UDP/IP 層統計</span>
+<span class="cmd">cat</span> <span class="arg">/proc/net/netstat</span>  <span class="comment"># 擴展 TCP 統計</span>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin-top:8px;">大量 <code>TCPRetransSegs</code> 暗示網路品質差或 MTU 問題；<code>ListenOverflows</code> 暗示 backlog 太小。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(34,211,238,0.15);">🐝</span>
+      Cilium + Hubble（eBPF 可觀測）
+    </div>
+    <p>如果叢集使用 Cilium CNI，Hubble 提供免 sidecar 的 L3/L4/L7 流量觀測：</p>
+    <div class="code-block">
+<span class="cmd">hubble</span> <span class="flag">observe</span> <span class="arg">--pod mynamespace/mypod</span>
+<span class="cmd">hubble</span> <span class="flag">observe</span> <span class="flag">--verdict DROPPED</span>   <span class="comment"># 只看被丟的封包</span>
+<span class="cmd">hubble</span> <span class="flag">observe</span> <span class="flag">--protocol DNS</span>      <span class="comment"># DNS 查詢</span>
+<span class="cmd">cilium</span> <span class="flag">monitor</span> <span class="flag">--type drop</span>         <span class="comment"># 即時看 policy drop</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 系統 Debug ==================== -->
+<div class="section" id="tab-sys">
+  <h2 class="section-header">🖥️ 系統層 Debug 工具</h2>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(251,146,60,0.15);">📋</span>
+      dmesg — Kernel 訊息
+    </div>
+    <div class="code-block">
+<span class="comment"># OOM Killer 記錄</span>
+<span class="cmd">dmesg</span> | <span class="cmd">grep</span> <span class="flag">-i</span> <span class="arg">oom</span>
+<span class="cmd">dmesg</span> | <span class="cmd">grep</span> <span class="flag">-i</span> <span class="arg">"killed process"</span>
+
+<span class="comment"># 網路/硬體錯誤</span>
+<span class="cmd">dmesg</span> | <span class="cmd">grep</span> <span class="flag">-iE</span> <span class="arg">"error|fail|drop|link"</span>
+
+<span class="comment"># 磁碟 I/O 異常</span>
+<span class="cmd">dmesg</span> | <span class="cmd">grep</span> <span class="flag">-iE</span> <span class="arg">"xfs|ext4|io error|blk"</span>
+
+<span class="comment"># 即時追蹤（需 SYSLOG cap）</span>
+<span class="cmd">dmesg</span> <span class="flag">-w</span>
+
+<span class="comment"># 在 K8s 節點上（透過 debug pod）</span>
+<span class="cmd">kubectl</span> <span class="flag">debug node/&lt;node&gt;</span> <span class="flag">-it --image=ubuntu</span> <span class="arg">-- dmesg | grep oom</span>
+    </div>
+    <div class="highlight warn">
+      容器內預設無法執行 dmesg（<code>dmesg_restrict=1</code>）。實務上在宿主機或 <code>kubectl debug node/</code> 上執行。最常用於排查 OOM kill — 確認是哪個 cgroup 的哪個 process 被殺。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(52,211,153,0.15);">🔬</span>
+      strace — Syscall 追蹤
+    </div>
+    <div class="code-block">
+<span class="comment"># 追蹤某 process 的所有 syscall</span>
+<span class="cmd">strace</span> <span class="flag">-p &lt;pid&gt;</span> <span class="flag">-f</span>
+
+<span class="comment"># 只看網路相關 syscall</span>
+<span class="cmd">strace</span> <span class="flag">-p &lt;pid&gt;</span> <span class="flag">-e trace=network</span>
+
+<span class="comment"># 只看檔案操作</span>
+<span class="cmd">strace</span> <span class="flag">-p &lt;pid&gt;</span> <span class="flag">-e trace=open,read,write,stat</span>
+
+<span class="comment"># 統計各 syscall 花費的時間</span>
+<span class="cmd">strace</span> <span class="flag">-p &lt;pid&gt;</span> <span class="flag">-c</span>
+
+<span class="comment"># 在 K8s 中用 ephemeral container</span>
+<span class="comment"># Pod 需啟用 shareProcessNamespace: true</span>
+<span class="cmd">kubectl</span> <span class="flag">debug -it</span> <span class="arg">&lt;pod&gt;</span> <span class="flag">--image=ubuntu --target=&lt;container&gt;</span>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin-top:8px;">容器啟動後卡住？strace 通常能立刻看到卡在哪個 syscall（DNS lookup、connect、read config 等）。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(244,114,182,0.15);">📂</span>
+      lsof — File Descriptor 檢查
+    </div>
+    <div class="code-block">
+<span class="cmd">lsof</span> <span class="flag">-i :8080</span>        <span class="comment"># 誰佔了 port 8080</span>
+<span class="cmd">lsof</span> <span class="flag">-p &lt;pid&gt;</span>         <span class="comment"># 該 process 開的所有 fd</span>
+<span class="cmd">lsof</span> <span class="flag">-i -P -n</span>         <span class="comment"># 所有網路連線</span>
+
+<span class="comment"># 直接讀 /proc（不需 lsof）</span>
+<span class="cmd">ls</span> <span class="arg">/proc/&lt;pid&gt;/fd/</span> | <span class="cmd">wc</span> <span class="flag">-l</span>   <span class="comment"># fd 數量</span>
+<span class="cmd">cat</span> <span class="arg">/proc/&lt;pid&gt;/limits</span>             <span class="comment"># ulimit 設定</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(56,189,248,0.15);">📊</span>
+      /proc 檔案系統速查
+    </div>
+    <table class="perm-table">
+      <thead>
+        <tr><th>路徑</th><th>用途</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">/proc/&lt;pid&gt;/status</td><td>process 狀態、記憶體用量、capabilities hex</td></tr>
+        <tr><td class="mono">/proc/&lt;pid&gt;/limits</td><td>各項 ulimit（nofile 常見坑）</td></tr>
+        <tr><td class="mono">/proc/&lt;pid&gt;/fd/</td><td>所有打開的 file descriptor</td></tr>
+        <tr><td class="mono">/proc/&lt;pid&gt;/ns/</td><td>各 namespace 的 inode（確認隔離狀況）</td></tr>
+        <tr><td class="mono">/proc/net/tcp</td><td>ss 的底層資料來源</td></tr>
+        <tr><td class="mono">/proc/net/snmp</td><td>TCP/UDP/IP 層計數器</td></tr>
+        <tr><td class="mono">/proc/meminfo</td><td>系統記憶體概覽</td></tr>
+        <tr><td class="mono">/proc/pressure/*</td><td>PSI（Pressure Stall Info）：cpu/memory/io 壓力指標</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(129,140,248,0.15);">🔥</span>
+      效能分析工具
+    </div>
+    <div class="code-block">
+<span class="comment"># perf — CPU profiling</span>
+<span class="cmd">perf</span> <span class="flag">top</span>                    <span class="comment"># 即時看哪些函式最耗 CPU</span>
+<span class="cmd">perf</span> <span class="flag">record -p &lt;pid&gt; -g</span>     <span class="comment"># 錄製 + call graph</span>
+<span class="cmd">perf</span> <span class="flag">report</span>                  <span class="comment"># 分析錄製結果</span>
+
+<span class="comment"># bpftrace — eBPF 一行式追蹤</span>
+<span class="cmd">bpftrace</span> <span class="flag">-e</span> <span class="arg">'tracepoint:syscalls:sys_enter_openat { printf("%s %s\n", comm, str(args->filename)); }'</span>
+
+<span class="comment"># kubectl-flame — K8s pod 火焰圖</span>
+<span class="cmd">kubectl</span> <span class="flag">flame</span> <span class="arg">&lt;pod&gt;</span> <span class="flag">-t 30</span> <span class="flag">--lang go</span> <span class="flag">-o /tmp/flame.svg</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(251,191,36,0.15);">📜</span>
+      journalctl — 節點日誌
+    </div>
+    <div class="code-block">
+<span class="cmd">journalctl</span> <span class="flag">-u kubelet</span> <span class="flag">--since "5 min ago"</span>
+<span class="cmd">journalctl</span> <span class="flag">-u containerd</span> <span class="flag">-f</span>     <span class="comment"># 即時追蹤</span>
+<span class="cmd">journalctl</span> <span class="flag">-u kubelet</span> <span class="flag">--no-pager</span> | <span class="cmd">grep</span> <span class="arg">-i error</span>
+
+<span class="comment"># 看 kernel 日誌（等同 dmesg 但有時間戳）</span>
+<span class="cmd">journalctl</span> <span class="flag">-k</span> <span class="flag">--since "1 hour ago"</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 可觀測性 ==================== -->
+<div class="section" id="tab-obs">
+  <h2 class="section-header">📡 可觀測性工具</h2>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(56,189,248,0.15);">📝</span>
+      日誌收集
+    </div>
+    <p><strong>EFK / ELK Stack</strong> — Elasticsearch + Fluentd (或 Filebeat) + Kibana。全文索引、強大查詢，但資源消耗高。</p>
+    <p><strong>Loki + Grafana</strong> — 只索引 label 不做全文索引，輕量許多。用 LogQL 查詢，適合 K8s label 體系。</p>
+    <p><strong>stern</strong> — 命令列工具，同時 tail 多個 pod 的日誌並以顏色區分。<code class="mono">stern "api-.*" -n production</code></p>
+    <p><strong>kubectl logs 技巧</strong>：<code class="mono">--previous</code>（crash 前的日誌）、<code class="mono">-c init-container</code>（指定容器）、<code class="mono">--since=5m</code>（最近 5 分鐘）。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(52,211,153,0.15);">📈</span>
+      指標監控
+    </div>
+    <p><strong>Prometheus + Grafana</strong> — 指標收集 + 視覺化的標配。搭配 Alertmanager 做告警。kube-state-metrics 暴露 K8s 物件狀態，node-exporter 暴露節點指標。</p>
+    <p><strong>cAdvisor</strong> — 內建於 kubelet，提供每個容器的 CPU/MEM/NET/FS 指標。</p>
+    <p><strong>kubectl top</strong> — 需要 metrics-server。<code class="mono">kubectl top pod --sort-by=memory</code> 快速找到記憶體大戶。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(244,114,182,0.15);">🔗</span>
+      分散式追蹤
+    </div>
+    <p><strong>Jaeger / Zipkin + OpenTelemetry</strong> — 追蹤請求在微服務之間的流經路徑和各段延遲。排查「為什麼這個 API 慢」的利器。</p>
+    <p>搭配 Istio/Linkerd service mesh 可以自動注入 trace header，不需改 code 就能得到基礎追蹤。深入追蹤仍需在 application 層用 OTel SDK 埋 span。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(248,113,113,0.15);">🛡️</span>
+      安全監控
+    </div>
+    <p><strong>Falco</strong> — runtime 安全偵測，基於 eBPF/kernel module，偵測容器內執行 shell、讀取 /etc/shadow、異常網路連線等。</p>
+    <p><strong>Trivy</strong> — 映像檔 CVE 掃描 + K8s manifest 設定掃描。<code class="mono">trivy image nginx:latest</code></p>
+    <p><strong>kube-bench</strong> — 檢查叢集是否符合 CIS Kubernetes Benchmark。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(129,140,248,0.15);">🖥️</span>
+      互動式管理工具
+    </div>
+    <p><strong>k9s</strong> — 終端機互動式 K8s dashboard。快速切換 ns、查看 pod、即時 log、exec shell。<code class="mono">k9s -n production</code></p>
+    <p><strong>Lens / OpenLens</strong> — 圖形化 K8s IDE，內建 Prometheus 整合，適合偏好 GUI 的人。</p>
+  </div>
+</div>
+
+<!-- ==================== Playbook ==================== -->
+<div class="section" id="tab-playbook">
+  <h2 class="section-header">📖 Debug Playbook</h2>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(248,113,113,0.15);">💀</span>
+      場景一：Pod CrashLoopBackOff
+    </div>
+    <div class="flow">
+      <div class="flow-step"><div class="step-num">STEP 1</div><p><code>kubectl describe pod</code> → 看 Events、Exit Code、Reason。Exit 137 = OOM kill 或 SIGKILL；Exit 1 = 應用程式錯誤。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 2</div><p><code>kubectl logs --previous</code> → 看 crash 前的日誌。加 <code>-c &lt;container&gt;</code> 指定 init 或 sidecar。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 3</div><p>如果是 Exit 137 且日誌沒有應用程式錯誤：到宿主機 <code>dmesg | grep oom</code> 確認是否被 OOM Killer 殺掉。如果是，調高 memory limit 或排查記憶體洩漏。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 4</div><p>如果是應用程式啟動失敗：<code>kubectl debug -it &lt;pod&gt; --copy-to=debug-pod --container=app -- sh</code> 建立副本 pod 進入除錯。或改 command 為 <code>sleep infinity</code> 進去手動啟動觀察。</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(56,189,248,0.15);">🌐</span>
+      場景二：Service 連不到
+    </div>
+    <div class="flow">
+      <div class="flow-step"><div class="step-num">STEP 1</div><p><code>kubectl get endpoints &lt;svc&gt;</code> → endpoint 是否為空？空 = selector 沒 match 或 pod 沒 ready。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 2</div><p>DNS 解析：在 pod 內 <code>nslookup &lt;svc&gt;.&lt;ns&gt;.svc.cluster.local</code>。失敗 = CoreDNS 問題。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 3</div><p>直接 curl Pod IP + port → 通 = kube-proxy/iptables 問題；不通 = 應用程式或 NetworkPolicy 問題。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 4</div><p>檢查 NetworkPolicy：<code>kubectl get networkpolicy -n &lt;ns&gt;</code>，看 ingress/egress 規則是否阻擋。<code>hubble observe --verdict DROPPED</code> 如果有 Cilium。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 5</div><p>深入抓包：<code>kubectl sniff &lt;pod&gt;</code> 或 nsenter + tcpdump，看封包到底到了哪一層。</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(251,146,60,0.15);">🐌</span>
+      場景三：應用程式變慢
+    </div>
+    <div class="flow">
+      <div class="flow-step"><div class="step-num">STEP 1</div><p><code>kubectl top pod</code> → CPU 是否被 throttle？<code>cat /sys/fs/cgroup/cpu.stat</code> 看 <code>nr_throttled</code>。Memory 是否接近 limit？</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 2</div><p><code>ss -ti</code> → 看 TCP 連線的 rtt 和 retrans。高重傳 = 網路品質問題或 MTU 問題。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 3</div><p><code>strace -c -p &lt;pid&gt;</code> → 統計 syscall 時間分佈。如果 <code>futex</code> 佔大量時間 = 鎖競爭；<code>epoll_wait</code> = 等待 I/O。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 4</div><p>Profiling：<code>kubectl flame &lt;pod&gt;</code> 產生火焰圖找 CPU hotspot。看 Jaeger trace 找跨服務延遲瓶頸。</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(52,211,153,0.15);">💾</span>
+      場景四：Volume 掛載失敗
+    </div>
+    <div class="flow">
+      <div class="flow-step"><div class="step-num">STEP 1</div><p><code>kubectl describe pvc</code> → Events 通常會說原因。常見：StorageClass 不存在、quota 滿、node affinity 不符。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 2</div><p><code>kubectl describe pod</code> → 看 Volume 相關 Events，特別是 <code>FailedMount</code>、<code>FailedAttachVolume</code>。</p></div>
+      <div class="flow-connector"></div>
+      <div class="flow-step"><div class="step-num">STEP 3</div><p>到宿主機：<code>dmesg | grep -i xfs\|ext4</code> 檢查磁碟錯誤。<code>df -h</code> 檢查節點磁碟空間。<code>journalctl -u kubelet</code> 看 mount 錯誤。</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="icon" style="background:rgba(129,140,248,0.15);">🧭</span>
+      通用 Debug 心法
+    </div>
+    <div class="highlight">
+      <strong>由外而內：</strong>kubectl describe/logs/events → 進容器 ss/curl/nslookup → 宿主機 dmesg/journalctl/nsenter → 抓包 tcpdump → 追蹤 strace/perf
+    </div>
+    <div class="highlight warn">
+      <strong>不要一開始就 privileged。</strong>先用不需權限的工具（ss、ip、curl、/proc）排查，必要時才用 ephemeral container 或 debug node pod 取得更高權限。
+    </div>
+    <div class="highlight danger">
+      <strong>生產環境慎用 strace/tcpdump。</strong>這些工具會對目標 process 產生效能影響。tcpdump 在高流量下可能丟包或佔用大量磁碟。建議限時限範圍。
+    </div>
+  </div>
+</div>
+
+</div><!-- .content -->
+
+<script>
+// Tab navigation
+const nav = document.getElementById('nav');
+const buttons = nav.querySelectorAll('.nav-btn');
+const sections = document.querySelectorAll('.section');
+
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    sections.forEach(s => {
+      s.classList.toggle('active', s.id === 'tab-' + tab);
+    });
+    window.scrollTo({ top: document.querySelector('.nav').offsetTop, behavior: 'smooth' });
+  });
+});
+
+// Collapsible sections
+document.querySelectorAll('.collapsible-header').forEach(header => {
+  header.addEventListener('click', () => {
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>

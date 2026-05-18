@@ -1,0 +1,116 @@
+
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: transparent; color: var(--text-color, #1a1a1a); }
+  .card { border: 1px solid var(--border-color, #ddd); border-radius: 12px; padding: 20px; margin-bottom: 16px; cursor: pointer; transition: all 0.2s; }
+  .card:hover { border-color: var(--accent, #6366f1); }
+  .card.open { border-color: var(--accent, #6366f1); }
+  .question { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .icon { font-size: 22px; flex-shrink: 0; }
+  .chevron { margin-left: auto; transition: transform 0.2s; font-size: 14px; opacity: 0.4; }
+  .card.open .chevron { transform: rotate(90deg); }
+  .tech-name { display: inline-block; background: var(--tag-bg, #ede9fe); color: var(--tag-color, #5b21b6); padding: 2px 10px; border-radius: 6px; font-weight: 700; font-size: 15px; margin: 12px 4px 4px 0; }
+  .answer { display: none; margin-top: 14px; line-height: 1.7; font-size: 15px; }
+  .card.open .answer { display: block; }
+  .analogy { background: var(--analogy-bg, #f8f7ff); border-radius: 8px; padding: 12px 14px; margin: 10px 0; font-size: 14px; line-height: 1.6; border-left: 3px solid var(--accent, #6366f1); }
+  .lab { background: var(--lab-bg, #f0fdf4); border-radius: 8px; padding: 12px 14px; margin: 10px 0; font-size: 13px; line-height: 1.6; border-left: 3px solid #22c55e; }
+  .lab-title { font-weight: 700; color: #16a34a; margin-bottom: 4px; }
+  .versus { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+  .vs-item { flex: 1; min-width: 140px; background: var(--vs-bg, #f9fafb); border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.5; }
+  .vs-item strong { display: block; margin-bottom: 4px; }
+  .summary { margin-top: 20px; padding: 16px; border-radius: 12px; background: var(--summary-bg, #fafaf9); border: 1px solid var(--border-color, #ddd); line-height: 1.7; font-size: 14px; }
+  .summary h3 { font-size: 16px; margin-bottom: 8px; }
+
+  @media (prefers-color-scheme: dark) {
+    body { --text-color: #e4e4e7; --border-color: #3f3f46; --accent: #818cf8; --tag-bg: #312e81; --tag-color: #c7d2fe; --analogy-bg: #1e1b4b; --lab-bg: #052e16; --vs-bg: #27272a; --summary-bg: #1c1c1e; }
+  }
+</style>
+
+<div style="padding: 8px 4px;">
+
+<div class="card open" onclick="this.classList.toggle('open')">
+  <div class="question">
+    <span class="icon">🤔</span>
+    Pod 在不同 Node 上，封包怎麼送過去？
+    <span class="chevron">▶</span>
+  </div>
+  <div class="answer">
+    Pod IP 是叢集虛擬的，實體網路不認識。所以需要某種方式把 Pod 封包「藏」在 Node 之間的真實封包裡送過去。這就是<b>隧道</b>的概念。
+
+    <span class="tech-name">IP-in-IP</span>
+    <span class="tech-name">VXLAN</span>
+
+    <div class="analogy">
+      <b>生活比喻：</b>你寄一封信（Pod 封包），但郵局不認識收件地址。所以你把這封信塞進一個大信封（外層標頭），大信封寫的是郵局認識的地址（Node IP）。到了目的地再拆開大信封，取出原本的信。
+    </div>
+
+    <div class="versus">
+      <div class="vs-item"><strong>IP-in-IP</strong>只加 20 bytes 外層 IP。輕薄快速，但只能搬 L3 封包。Calico 預設用這個。</div>
+      <div class="vs-item"><strong>VXLAN</strong>多加 ~50 bytes，把整個乙太網路幀包進 UDP。更通用，什麼網路環境都能跑。Flannel 預設用這個。</div>
+    </div>
+
+    <div class="lab">
+      <div class="lab-title">🧪 動手試</div>
+      在 Node 上跑 <code>ip -d link show tunl0</code>（IP-in-IP）或 <code>ip -d link show flannel.1</code>（VXLAN），你會看到隧道介面。再用 <code>tcpdump -i eth0 -n proto 4</code> 抓 IP-in-IP 封包，親眼看到外層標頭。
+    </div>
+  </div>
+</div>
+
+<div class="card" onclick="this.classList.toggle('open')">
+  <div class="question">
+    <span class="icon">🤔</span>
+    每個 Node 怎麼知道「某個 Pod IP 在哪個 Node 上」？
+    <span class="chevron">▶</span>
+  </div>
+  <div class="answer">
+    隧道解決了怎麼「送」，但送之前 Node 得知道該送去「哪」。這就是路由資訊的分發問題。
+
+    <span class="tech-name">BGP</span>
+
+    <div class="analogy">
+      <b>生活比喻：</b>想像每個 Node 是一個社區的管理員。BGP 就是管理員之間的 Line 群組：「10.244.1.0/24 那些住戶在我這邊」「10.244.2.0/24 在我這邊」。大家互相廣播，每個人都知道該把信送去哪個社區。
+    </div>
+
+    <p>Calico 用 BGP 讓每個 Node 把自己負責的 Pod 子網廣播出去。如果所有 Node 在同一個 L2 子網，甚至可以純用 BGP 路由，完全不需要隧道封裝（<code>ipPool.ipipMode: Never</code>），效能最好。跨子網時才回退到 IP-in-IP。</p>
+
+    <div class="lab">
+      <div class="lab-title">🧪 動手試</div>
+      裝了 Calico 後跑 <code>calicoctl node status</code>，你會看到 BGP peer 列表和連線狀態。再跑 <code>ip route</code>，會看到類似 <code>10.244.2.0/24 via 192.168.1.20 dev tunl0</code> 的路由——這就是 BGP 學來的。
+    </div>
+  </div>
+</div>
+
+<div class="card" onclick="this.classList.toggle('open')">
+  <div class="question">
+    <span class="icon">🤔</span>
+    iptables 規則太多太慢，有沒有更高效的方式處理封包？
+    <span class="chevron">▶</span>
+  </div>
+  <div class="answer">
+    當叢集有上千個 Service，kube-proxy 產生的 iptables 規則可能破萬條。每個封包都要線性比對，延遲愈來愈高。
+
+    <span class="tech-name">eBPF</span>
+
+    <div class="analogy">
+      <b>生活比喻：</b>iptables 像是在門口設了一排警衛，每個人進來都要從第一個警衛問到最後一個。eBPF 像是在門口裝了一台人臉辨識機——直接查表，O(1) 時間搞定，不用排隊。而且這台機器跑在 Linux 核心裡面，封包根本不用繞到使用者空間。
+    </div>
+
+    <p>Cilium 這個 CNI 就是用 eBPF 取代 iptables 和 kube-proxy。它直接在核心層攔截封包、做負載平衡和 NetworkPolicy 過濾，不需要產生任何 iptables 規則。</p>
+
+    <div class="lab">
+      <div class="lab-title">🧪 動手試</div>
+      裝 Cilium 後跑 <code>cilium status</code> 看 eBPF 狀態，再用 <code>cilium bpf lb list</code> 查看 Service 的 eBPF 負載平衡表。對比 <code>iptables -t nat -L | wc -l</code> 看規則數——你會發現幾乎是空的。
+    </div>
+  </div>
+</div>
+
+<div class="summary">
+  <h3>串起來的記憶方式</h3>
+  先問<b>問題</b>，再記<b>答案</b>：<br><br>
+  ❶ 封包怎麼跨 Node？→ 隧道（IP-in-IP 輕薄 / VXLAN 通用）<br>
+  ❷ Node 怎麼知道路由？→ BGP 互相廣播<br>
+  ❸ 規則太多太慢？→ eBPF 在核心層查表<br><br>
+  每個技術都是一個<b>問題的解法</b>，不是一個要背的名詞。在自己的叢集上跑一次上面的指令，比讀十篇文章都有效。
+</div>
+
+</div>

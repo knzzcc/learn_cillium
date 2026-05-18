@@ -1,0 +1,190 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{display:flex;gap:12px;width:100%}
+.col{flex:1;min-width:0}
+.col-header{padding:10px 14px;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0;text-align:center}
+.col-header h2{font-size:16px;font-weight:500;margin:0}
+.col-header p{font-size:12px;margin:2px 0 0;opacity:.75}
+.left .col-header{background:#085041;color:#9FE1CB}
+.right .col-header{background:#3C3489;color:#CECBF6}
+.rows{display:flex;flex-direction:column;gap:1px;background:var(--color-border-tertiary);border-radius:0 0 var(--border-radius-lg) var(--border-radius-lg);overflow:hidden}
+.row{display:flex;align-items:stretch;min-height:0}
+.label-col{width:90px;min-width:90px;padding:10px 8px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-weight:500;color:var(--color-text-secondary);background:var(--color-background-secondary)}
+.content-col{flex:1;padding:10px 12px;background:var(--color-background-primary)}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;margin:0 3px 3px 0}
+.left .tag{background:#E1F5EE;color:#085041}
+.right .tag{background:#EEEDFE;color:#3C3489}
+@media(prefers-color-scheme:dark){
+  .left .tag{background:#085041;color:#9FE1CB}
+  .right .tag{background:#3C3489;color:#CECBF6}
+}
+.desc{font-size:12px;color:var(--color-text-secondary);line-height:1.5;margin-top:4px}
+.arrow-row{display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 0;background:var(--color-background-primary)}
+.arrow-row i{font-size:14px;color:var(--color-text-tertiary)}
+.mapping{margin-top:16px;border:1px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.mapping-header{padding:10px 14px;background:var(--color-background-secondary);font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.map-row{display:flex;align-items:center;padding:8px 14px;border-top:1px solid var(--color-border-tertiary);font-size:12px;gap:8px}
+.map-row:nth-child(odd){background:var(--color-background-primary)}
+.map-row:nth-child(even){background:var(--color-background-secondary)}
+.map-left{flex:1;color:#0F6E56;font-weight:500}
+.map-arrow{color:var(--color-text-tertiary);font-size:14px}
+.map-right{flex:1;text-align:right;color:#534AB7;font-weight:500}
+.map-note{font-size:11px;color:var(--color-text-tertiary);text-align:center;flex:0 0 100%;margin-top:2px}
+@media(prefers-color-scheme:dark){
+  .map-left{color:#5DCAA5}
+  .map-right{color:#AFA9EC}
+}
+</style>
+<h2 class="sr-only">Kubernetes 網路與傳統實體/虛擬網路的對照比較表</h2>
+
+<div class="wrap">
+  <!-- Traditional -->
+  <div class="col left">
+    <div class="col-header">
+      <h2>傳統資料中心</h2>
+      <p>實體 + 虛擬網路</p>
+    </div>
+    <div class="rows">
+      <div class="row">
+        <div class="label-col">IP 管理</div>
+        <div class="content-col">
+          <span class="tag">IPAM / DHCP</span>
+          <div class="desc">人工或 IPAM 系統規劃網段，DHCP 發 IP 給主機和 VM</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">路由協議</div>
+        <div class="content-col">
+          <span class="tag">BGP</span><span class="tag">OSPF</span>
+          <div class="desc">Router 之間跑 BGP/OSPF 交換路由表，建立全網可達性</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">L3 轉發</div>
+        <div class="content-col">
+          <span class="tag">實體 Router</span>
+          <div class="desc">硬體路由器做跨網段轉發，查路由表決定下一跳</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">L2 交換</div>
+        <div class="content-col">
+          <span class="tag">實體 Switch</span><span class="tag">Bridge</span>
+          <div class="desc">同 VLAN 內的 MAC 轉發，Spine-Leaf 拓撲</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">Overlay</div>
+        <div class="content-col">
+          <span class="tag">VXLAN</span><span class="tag">GRE</span>
+          <div class="desc">用隧道封裝讓不同主機的 VM 看起來在同一 L2</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">工作負載</div>
+        <div class="content-col">
+          <span class="tag">VM</span><span class="tag">Bare Metal</span>
+          <div class="desc">每台 VM 有獨立虛擬網卡，接到 vSwitch</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- K8s -->
+  <div class="col right">
+    <div class="col-header">
+      <h2>Kubernetes</h2>
+      <p>CNI 插件驅動的網路</p>
+    </div>
+    <div class="rows">
+      <div class="row">
+        <div class="label-col">IP 管理</div>
+        <div class="content-col">
+          <span class="tag">CNI IPAM</span>
+          <div class="desc">CNI 插件自帶 IPAM，每個 Pod 自動拿到 cluster 內唯一 IP</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">路由協議</div>
+        <div class="content-col">
+          <span class="tag">BGP (Calico)</span><span class="tag">gossip</span>
+          <div class="desc">Calico 用 BGP 廣播 Pod CIDR；Flannel 用 etcd + gossip 同步路由</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">L3 轉發</div>
+        <div class="content-col">
+          <span class="tag">Linux 核心路由</span><span class="tag">eBPF</span>
+          <div class="desc">每個 Node 的 Linux kernel 就是路由器，iptables 或 eBPF 做轉發</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">L2 交換</div>
+        <div class="content-col">
+          <span class="tag">cbr0 / cni0</span><span class="tag">veth pair</span>
+          <div class="desc">Node 上的 Linux bridge 把同節點的 Pod 接在一起</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">Overlay</div>
+        <div class="content-col">
+          <span class="tag">VXLAN</span><span class="tag">IPIP</span><span class="tag">WireGuard</span>
+          <div class="desc">跨 Node 的 Pod 流量用隧道封裝（或 BGP 直連免 overlay）</div>
+        </div>
+      </div>
+      <div class="arrow-row"><i class="ti ti-arrow-down" aria-hidden="true"></i></div>
+      <div class="row">
+        <div class="label-col">工作負載</div>
+        <div class="content-col">
+          <span class="tag">Pod</span><span class="tag">Container</span>
+          <div class="desc">Pod 有自己的 network namespace + veth，每個 Pod 一個 IP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mapping table -->
+<div class="mapping">
+  <div class="mapping-header">對應關係速查</div>
+  <div class="map-row">
+    <span class="map-left">IPAM / DHCP Server</span>
+    <i class="ti ti-arrows-right-left map-arrow" aria-hidden="true"></i>
+    <span class="map-right">CNI IPAM (host-local / calico-ipam)</span>
+  </div>
+  <div class="map-row">
+    <span class="map-left">硬體 Router</span>
+    <i class="ti ti-arrows-right-left map-arrow" aria-hidden="true"></i>
+    <span class="map-right">Linux kernel routing + kube-proxy</span>
+  </div>
+  <div class="map-row">
+    <span class="map-left">BGP (實體交換機之間)</span>
+    <i class="ti ti-arrows-right-left map-arrow" aria-hidden="true"></i>
+    <span class="map-right">BGP (Calico BIRD) / etcd 路由同步</span>
+  </div>
+  <div class="map-row">
+    <span class="map-left">實體 Switch / Bridge</span>
+    <i class="ti ti-arrows-right-left map-arrow" aria-hidden="true"></i>
+    <span class="map-right">Linux bridge (cbr0) + veth pair</span>
+  </div>
+  <div class="map-row">
+    <span class="map-left">VXLAN / GRE 隧道</span>
+    <i class="ti ti-arrows-right-left map-arrow" aria-hidden="true"></i>
+    <span class="map-right">Flannel VXLAN / Calico IPIP / WireGuard</span>
+  </div>
+  <div class="map-row">
+    <span class="map-left">VM / vNIC / vSwitch</span>
+    <i class="ti ti-arrows-right-left map-arrow" aria-hidden="true"></i>
+    <span class="map-right">Pod / net namespace / veth pair</span>
+  </div>
+</div>
