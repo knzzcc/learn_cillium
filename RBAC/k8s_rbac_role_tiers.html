@@ -1,0 +1,123 @@
+<style>
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.tier{background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:12px;padding:16px 18px;margin-bottom:12px;transition:border-color .2s}
+.tier:hover{border-color:var(--color-border-secondary)}
+.tier-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.tier-badge{font-size:11px;font-weight:500;padding:2px 10px;border-radius:99px}
+.tier-name{font-size:16px;font-weight:500;color:var(--color-text-primary)}
+.tier-who{font-size:13px;color:var(--color-text-secondary);margin-bottom:10px}
+.perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+.perm-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-text-secondary);line-height:1.5}
+.perm-item i{font-size:14px}
+.yes{color:var(--color-text-success)}
+.no{color:var(--color-text-danger)}
+.maybe{color:var(--color-text-warning)}
+.scope-tag{font-size:11px;padding:1px 6px;border-radius:4px;margin-left:auto}
+.ns{background:#E1F5EE;color:#085041}
+.cl{background:#E6F1FB;color:#0C447C}
+@media(prefers-color-scheme:dark){
+.ns{background:#04342C;color:#9FE1CB}
+.cl{background:#042C53;color:#85B7EB}
+}
+.divider{height:1px;background:var(--color-border-tertiary);margin:16px 0}
+.note{font-size:13px;color:var(--color-text-secondary);line-height:1.7;margin-top:4px}
+.click-hint{font-size:12px;color:var(--color-text-tertiary);cursor:pointer;margin-top:6px}
+.click-hint:hover{color:var(--color-text-secondary)}
+</style>
+<h2 class="sr-only">Kubernetes RBAC 常見角色權限分級表</h2>
+<div style="padding:4px 0">
+
+<div class="tier">
+  <div class="tier-head">
+    <span class="tier-badge" style="background:#FCEBEB;color:#791F1F">權限最高</span>
+    <span class="tier-name">Cluster admin</span>
+    <span class="scope-tag cl">ClusterRole</span>
+  </div>
+  <div class="tier-who">平台團隊 / SRE lead — 通常只有 1-2 人</div>
+  <div class="perm-grid">
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>所有 namespace 所有資源</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>管理 Node、PV</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>建立/刪除 Namespace</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>管理 RBAC 本身</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>管理 CRD</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>存取 Secret</div>
+  </div>
+  <div class="click-hint" onclick="sendPrompt('cluster-admin 的 ClusterRole YAML 長什麼樣？')"><i class="ti ti-arrow-right" aria-hidden="true"></i> 看 YAML 範例</div>
+</div>
+
+<div class="tier">
+  <div class="tier-head">
+    <span class="tier-badge" style="background:#FAEEDA;color:#633806">跨 namespace</span>
+    <span class="tier-name">SRE / DevOps</span>
+    <span class="scope-tag cl">ClusterRole</span>
+  </div>
+  <div class="tier-who">維運工程師 — 需要看全局但不一定要改 RBAC</div>
+  <div class="perm-grid">
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>所有 namespace 的 Pod/Deployment</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>看 log、exec 進 Pod</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>管理 Ingress、Service</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>看 Node 狀態</div>
+    <div class="perm-item"><i class="ti ti-x no" aria-hidden="true"></i>不能改 RBAC 設定</div>
+    <div class="perm-item"><i class="ti ti-check maybe" aria-hidden="true"></i>有限的 Secret 存取</div>
+  </div>
+  <div class="click-hint" onclick="sendPrompt('SRE 角色的 ClusterRole YAML 怎麼寫？')"><i class="ti ti-arrow-right" aria-hidden="true"></i> 看 YAML 範例</div>
+</div>
+
+<div class="tier">
+  <div class="tier-head">
+    <span class="tier-badge" style="background:#E1F5EE;color:#085041">單一 namespace</span>
+    <span class="tier-name">Developer</span>
+    <span class="scope-tag ns">Role</span>
+  </div>
+  <div class="tier-who">開發者 — 只管自己團隊的 namespace（如 dev、staging）</div>
+  <div class="perm-grid">
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>自己 namespace 的 Pod/Deployment</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>看 log</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>建立/更新 ConfigMap</div>
+    <div class="perm-item"><i class="ti ti-x no" aria-hidden="true"></i>不能 exec 進 prod Pod</div>
+    <div class="perm-item"><i class="ti ti-x no" aria-hidden="true"></i>不能看 Secret</div>
+    <div class="perm-item"><i class="ti ti-x no" aria-hidden="true"></i>看不到其他 namespace</div>
+  </div>
+  <div class="click-hint" onclick="sendPrompt('Developer 角色的 Role + RoleBinding YAML 怎麼寫？')"><i class="ti ti-arrow-right" aria-hidden="true"></i> 看 YAML 範例</div>
+</div>
+
+<div class="tier">
+  <div class="tier-head">
+    <span class="tier-badge" style="background:#EEEDFE;color:#3C3489">唯讀</span>
+    <span class="tier-name">Viewer / QA</span>
+    <span class="scope-tag ns">Role</span>
+  </div>
+  <div class="tier-who">QA、PM、新進成員 — 只看不動</div>
+  <div class="perm-grid">
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>get、list、watch Pod 狀態</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>看 log</div>
+    <div class="perm-item"><i class="ti ti-x no" aria-hidden="true"></i>不能 create / update / delete</div>
+    <div class="perm-item"><i class="ti ti-x no" aria-hidden="true"></i>不能 exec</div>
+  </div>
+  <div class="click-hint" onclick="sendPrompt('Viewer 唯讀角色的 YAML 怎麼寫？')"><i class="ti ti-arrow-right" aria-hidden="true"></i> 看 YAML 範例</div>
+</div>
+
+<div class="tier">
+  <div class="tier-head">
+    <span class="tier-badge" style="background:#E6F1FB;color:#0C447C">程式用</span>
+    <span class="tier-name">ServiceAccount（應用程式）</span>
+    <span class="scope-tag ns">Role</span>
+  </div>
+  <div class="tier-who">Pod 裡的程式 — 只給它需要的最小權限</div>
+  <div class="perm-grid">
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>只存取特定資源（如 ConfigMap）</div>
+    <div class="perm-item"><i class="ti ti-check yes" aria-hidden="true"></i>只允許特定 verbs</div>
+    <div class="perm-item"><i class="ti ti-x no" aria-hidden="true"></i>不給多餘權限</div>
+    <div class="perm-item"><i class="ti ti-x no" aria-hidden="true"></i>預設不掛載 token</div>
+  </div>
+  <div class="click-hint" onclick="sendPrompt('怎麼幫 Pod 設定最小權限的 ServiceAccount？')"><i class="ti ti-arrow-right" aria-hidden="true"></i> 看 YAML 範例</div>
+</div>
+
+<div class="divider"></div>
+
+<div class="note">
+  <i class="ti ti-alert-triangle maybe" aria-hidden="true" style="font-size:14px"></i>
+  核心原則是<strong>最小權限（Least Privilege）</strong>：每個人和每個程式只拿到它需要的最少權限。寧可一開始給少，之後有需要再加，也不要一開始就給 cluster-admin。
+</div>
+
+</div>

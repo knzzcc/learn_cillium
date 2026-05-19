@@ -1,0 +1,111 @@
+<style>
+.card{background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:12px;padding:20px;margin-bottom:16px;transition:border-color .2s}
+.card:hover{border-color:var(--color-border-secondary)}
+.scene-tag{display:inline-block;font-size:12px;font-weight:500;padding:2px 10px;border-radius:99px;margin-bottom:10px}
+.scene-title{font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.scene-desc{font-size:14px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:12px}
+.pick-box{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.pick-label{font-size:12px;color:var(--color-text-tertiary);margin-bottom:4px}
+.pick-name{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.pick-why{font-size:13px;color:var(--color-text-secondary);margin-top:2px;line-height:1.5}
+.mode-badge{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.rwo{background:#E6F1FB;color:#0C447C}
+.rwx{background:#E1F5EE;color:#085041}
+.na{background:#F1EFE8;color:#444441}
+@media(prefers-color-scheme:dark){
+.rwo{background:#042C53;color:#B5D4F4}
+.rwx{background:#04342C;color:#9FE1CB}
+.na{background:#2C2C2A;color:#B4B2A9}
+}
+.divider{height:1px;background:var(--color-border-tertiary);margin:20px 0}
+.section-head{font-size:13px;font-weight:500;color:var(--color-text-tertiary);margin-bottom:12px;letter-spacing:0.5px}
+.keyword{font-family:var(--font-mono);font-size:13px;background:var(--color-background-tertiary);padding:1px 5px;border-radius:4px}
+.clickable{cursor:pointer;opacity:.85;transition:opacity .2s}
+.clickable:hover{opacity:1}
+</style>
+
+<div style="padding:4px 0">
+
+<div class="section-head">場景一：資料庫</div>
+<div class="card">
+  <span class="scene-tag" style="background:#EEEDFE;color:#3C3489">最常見</span>
+  <div class="scene-title">MySQL、PostgreSQL、MongoDB<span class="mode-badge rwo">RWO</span></div>
+  <div class="scene-desc">資料庫需要穩定的低延遲讀寫，一次只有一個節點存取磁碟就夠了。</div>
+  <div class="pick-box">
+    <div class="pick-label">雲端首選</div>
+    <div class="pick-name">AWS EBS (gp3/io2)、GCP Persistent Disk SSD</div>
+    <div class="pick-why">雲端原生 block storage，裝好 CSI driver 就能用。<span class="keyword">gp3</span> 是通用型，<span class="keyword">io2</span> 可以指定更高的 IOPS 給重負載 DB。</div>
+  </div>
+  <div class="pick-box">
+    <div class="pick-label">自建首選</div>
+    <div class="pick-name">Rook-Ceph RBD 或 Longhorn</div>
+    <div class="pick-why">Ceph RBD 提供分散式 block storage，資料自動複製到多個節點防止硬碟壞掉遺失。Longhorn 更簡單，適合不想花太多時間在儲存維運的團隊。</div>
+  </div>
+</div>
+
+<div class="section-head">場景二：多個 Pod 共享檔案</div>
+<div class="card">
+  <span class="scene-tag" style="background:#E1F5EE;color:#085041">需要 RWX</span>
+  <div class="scene-title">CMS 上傳目錄、ML 訓練資料集、共用設定檔<span class="mode-badge rwx">RWX</span></div>
+  <div class="scene-desc">多個 Pod 同時讀寫同一份檔案，block storage 做不到，必須用檔案系統層級的方案。</div>
+  <div class="pick-box">
+    <div class="pick-label">雲端首選</div>
+    <div class="pick-name">AWS EFS、GCP Filestore</div>
+    <div class="pick-why">託管式 NFS，不用自己架設。EFS 按用量計費彈性高，Filestore 效能更穩定但要先選容量。</div>
+  </div>
+  <div class="pick-box">
+    <div class="pick-label">自建首選</div>
+    <div class="pick-name">CephFS 或 NFS Server</div>
+    <div class="pick-why">CephFS 是 Ceph 的檔案系統模式，適合大規模。小規模用一台 NFS server 就夠了，但它是單點故障。</div>
+  </div>
+</div>
+
+<div class="section-head">場景三：大量非結構化資料</div>
+<div class="card">
+  <span class="scene-tag" style="background:#FAEEDA;color:#633806">不用 PV</span>
+  <div class="scene-title">圖片、影片、Log 檔、備份檔<span class="mode-badge na">不走 PV/PVC</span></div>
+  <div class="scene-desc">幾 TB 甚至幾十 TB 的檔案不適合放進 PV，管理困難又貴。改用物件儲存，讓應用直接透過 SDK 存取。</div>
+  <div class="pick-box">
+    <div class="pick-label">雲端</div>
+    <div class="pick-name">S3、GCS、Azure Blob</div>
+    <div class="pick-why">便宜、無限擴展、不需要掛載。應用程式用 SDK（例如 AWS SDK）直接讀寫。</div>
+  </div>
+  <div class="pick-box">
+    <div class="pick-label">自建</div>
+    <div class="pick-name">MinIO</div>
+    <div class="pick-why">S3 相容的開源物件儲存，可以跑在 K8s 裡。API 跟 S3 幾乎一樣，程式碼不用大改。</div>
+  </div>
+</div>
+
+<div class="section-head">場景四：機密與憑證</div>
+<div class="card">
+  <span class="scene-tag" style="background:#FBEAF0;color:#72243E">特殊用法</span>
+  <div class="scene-title">API Key、TLS 證書、資料庫密碼<span class="mode-badge na">Ephemeral volume</span></div>
+  <div class="scene-desc">不走傳統 PV/PVC。CSI driver 把機密以檔案形式注入 Pod，Pod 消失機密就消失。</div>
+  <div class="pick-box">
+    <div class="pick-label">方案</div>
+    <div class="pick-name">Secrets Store CSI Driver + Vault / 雲端 KMS</div>
+    <div class="pick-why">比 K8s 原生 Secret 安全，機密不存在 etcd 裡，而是從 Vault 或雲端 KMS 即時拉取。</div>
+  </div>
+</div>
+
+<div class="section-head">場景五：暫存與快取</div>
+<div class="card">
+  <span class="scene-tag" style="background:#F1EFE8;color:#444441">最簡單</span>
+  <div class="scene-title">CI/CD build cache、暫存檔、中間運算結果<span class="mode-badge na">不需要 CSI</span></div>
+  <div class="scene-desc">資料丟了也沒關係，只是為了加速。</div>
+  <div class="pick-box">
+    <div class="pick-label">方案</div>
+    <div class="pick-name">emptyDir 或 hostPath</div>
+    <div class="pick-why"><span class="keyword">emptyDir</span> 隨 Pod 生滅，最簡單。<span class="keyword">hostPath</span> 可以存取節點的本地磁碟，但 Pod 被調度到別的節點就讀不到了。</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div style="font-size:13px;color:var(--color-text-secondary);line-height:1.7">
+<span style="font-weight:500;color:var(--color-text-primary)">快速判斷法：</span>
+先看存取模式——只要一個 Pod 寫就選 block (RWO)，多個 Pod 共寫就選檔案系統 (RWX)，量大到 TB 級就跳過 PV 用物件儲存。
+</div>
+
+</div>
