@@ -9,3 +9,9 @@
 tmux很重要  tmux+vim+kubectl
 
 80HR練習
+
+
+
+### [CKA-Certified-Kubernetes-Administrator](https://github.com/theplatformlab/CKA-Certified-Kubernetes-Administrator) 
+
+### [CKS-Certified-Kubernetes-Security-Specialist](https://github.com/theplatformlab/CKS-Certified-Kubernetes-Security-Specialist) 
