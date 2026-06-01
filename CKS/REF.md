@@ -20,7 +20,7 @@ kind
 
 kodekloud
 
-vb+vagrant
+vb+vagrant 這是手動建
 
  [certified-kubernetes-administrator-course](https://github.com/kodekloudhub/certified-kubernetes-administrator-course) 
 
@@ -38,6 +38,12 @@ https://github.com/techiescamp/cka-certification-guide
 cka-certification-guide/tree/main/lab-setup/ubuntu-desktop
 ``````
 
-
+但是vagrant建好是空的，這也是手動建
 
 https://github.com/techiescamp/cka-certification-guide/blob/main/EXAM_TIPS.md
+
+[walidshaari/Certified-Kubernetes-Security-Specialist - CKS](https://github.com/walidshaari/Certified-Kubernetes-Security-Specialist)
+
+[zealvora/certified-kubernetes-security-specialist](https://github.com/zealvora/certified-kubernetes-security-specialist)
+
+[zealvora/certified-kubernetes-administrator](https://github.com/zealvora/certified-kubernetes-administrator)
