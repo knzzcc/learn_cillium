@@ -10,7 +10,9 @@ tmux很重要  tmux+vim+kubectl
 
 80HR練習
 
+底下這些資源都有附vagrant/kind當練習環境
 
+kind
 
 ### [CKA-Certified-Kubernetes-Administrator](https://github.com/theplatformlab/CKA-Certified-Kubernetes-Administrator) 
 
@@ -18,8 +20,14 @@ tmux很重要  tmux+vim+kubectl
 
 kodekloud
 
+vb+vagrant
+
  [certified-kubernetes-administrator-course](https://github.com/kodekloudhub/certified-kubernetes-administrator-course) 
 
 [certified-kubernetes-security-specialist-cks-course](https://github.com/kodekloudhub/certified-kubernetes-security-specialist-cks-course)
 
 [kodekloudhub/linux-basics-course](https://github.com/kodekloudhub/linux-basics-course)
+
+DevOpsCube
+
+https://github.com/techiescamp/cka-certification-guide
