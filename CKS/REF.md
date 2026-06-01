@@ -47,3 +47,13 @@ https://github.com/techiescamp/cka-certification-guide/blob/main/EXAM_TIPS.md
 [zealvora/certified-kubernetes-security-specialist](https://github.com/zealvora/certified-kubernetes-security-specialist)
 
 [zealvora/certified-kubernetes-administrator](https://github.com/zealvora/certified-kubernetes-administrator)
+
+kodekloud CKA / CKS太簡潔
+
+zealvora CKA / CKS 可以直接啃 淘寶有 udemy
+
+
+
+Blueswen 考CKA用的資源是kodekloud在udemy上開的課，CKS則是用kodekloud
+
+課程配合git rpeo在本地操作，怎麼驗證該章節是否學會了????
