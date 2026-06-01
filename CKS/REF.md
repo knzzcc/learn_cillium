@@ -28,6 +28,16 @@ vb+vagrant
 
 [kodekloudhub/linux-basics-course](https://github.com/kodekloudhub/linux-basics-course)
 
-DevOpsCube
+DevOpsCube ---> 寶藏
 
 https://github.com/techiescamp/cka-certification-guide
+
+1.34
+
+``````
+cka-certification-guide/tree/main/lab-setup/ubuntu-desktop
+``````
+
+
+
+https://github.com/techiescamp/cka-certification-guide/blob/main/EXAM_TIPS.md
