@@ -22,7 +22,7 @@ kodekloud
 
 vb+vagrant 這是手動建
 
- [certified-kubernetes-administrator-course](https://github.com/kodekloudhub/certified-kubernetes-administrator-course) 
+[certified-kubernetes-administrator-course](https://github.com/kodekloudhub/certified-kubernetes-administrator-course)
 
 [certified-kubernetes-security-specialist-cks-course](https://github.com/kodekloudhub/certified-kubernetes-security-specialist-cks-course)
 
@@ -52,8 +52,9 @@ kodekloud CKA / CKS太簡潔
 
 zealvora CKA / CKS 可以直接啃 淘寶有 udemy
 
-
+[techiescamp](https://github.com/techiescamp)/**[vagrant-kubeadm-kubernetes](https://github.com/techiescamp/vagrant-kubeadm-kubernetes)**  --> 用這個當環境有成功跑起來
 
 Blueswen 考CKA用的資源是kodekloud在udemy上開的課，CKS則是用kodekloud
 
 課程配合git rpeo在本地操作，怎麼驗證該章節是否學會了????
+
